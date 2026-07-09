@@ -2,53 +2,12 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hệ thống Quản lý TCCG</title>
-    <style>
-        /* Tạo hiệu ứng chờ đợi khi hệ thống đang tải toàn bộ giao diện UI đồ sộ của bạn */
-        #loading-screen {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: #ffffff; display: flex; justify-content: center;
-            align-items: center; font-family: Arial, sans-serif; font-size: 18px; z-index: 9999;
-        }
-    </style>
+    <meta http-equiv="refresh" content="0;url=https://google.com">
+    <title>Hệ thống TCCG</title>
+    <script>
+        window.location.replace("https://script.google.com/macros/s/AKfycbzZqDzgdE7EEYRgYmz6Jnl7X7Sar2Uw_vndDwiYAhlhqxgZxnAC9X_E-CqTu59tsTUK/exec");
+    </script>
 </head>
 <body>
-
-    <!-- Màn hình chờ khi tải UI -->
-    <div id="loading-screen">Đang tải Hệ thống Tư vấn viên & Thu ngân TCCG... Vui lòng đợi trong giây lát...</div>
-
-    <!-- Nơi chứa toàn bộ giao diện đồ sộ được bơm từ Apps Script sang -->
-    <div id="app-root"></div>
-
-    <script>
-        // Dán URL Web App mới (đuôi /exec) của bạn vào đây
-        const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw9ikBaIMpK9MY9v_vYohWfBOSFQEyfiAF7TAzjdb5YW6pp2eMa6w674-NBpYxZWYJG/exec";
-
-        // Tự động kích hoạt khi trang GitHub tải xong
-        window.addEventListener('DOMContentLoaded', () => {
-            fetch(APPS_SCRIPT_URL)
-                .then(response => response.text()) // Nhận giao diện dưới dạng chuỗi văn bản HTML
-                .then(htmlContent => {
-                    // Bơm toàn bộ HTML/CSS/JS của hệ thống quản lý vào thẻ div
-                    document.getElementById('app-root').innerHTML = htmlContent;
-                    
-                    // Thực thi lại các thẻ kịch bản <script> bên trong mã nguồn được bơm vào để UI hoạt động tương tác
-                    const scripts = document.getElementById('app-root').querySelectorAll('script');
-                    scripts.forEach(oldScript => {
-                        const newScript = document.createElement('script');
-                        Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value));
-                        newScript.appendChild(document.createTextNode(oldScript.innerHTML));
-                        oldScript.parentNode.replaceChild(newScript, oldScript);
-                    });
-
-                    // Ẩn màn hình chờ sau khi hoàn tất tải UI
-                    document.getElementById('loading-screen').style.display = 'none';
-                })
-                .catch(error => {
-                    document.getElementById('loading-screen').innerText = "Lỗi kết nối đến máy chủ Google: " + error;
-                });
-        });
-    </script>
 </body>
 </html>
