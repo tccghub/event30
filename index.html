@@ -1,13 +1,1939 @@
 <!DOCTYPE html>
-<html lang="vi">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta http-equiv="refresh" content="0;url=https://google.com">
-    <title>Hệ thống TCCG</title>
-    <script>
-        window.location.replace("https://script.google.com/macros/s/AKfycbzZqDzgdE7EEYRgYmz6Jnl7X7Sar2Uw_vndDwiYAhlhqxgZxnAC9X_E-CqTu59tsTUK/exec");
-    </script>
+  <base target="_top">
+  <link rel="icon" type="image/png" href="https://thammythucuc.vn/logo/favicon.ico">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Bổ sung thư viện html2pdf.js để xuất file PDF trực tiếp trên trình duyệt -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  
+  <style>
+    body { background-color: #f4f6f9; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+    .main-container { max-width: 850px; width: 95%; margin: 2.5rem auto; }
+    .login-container { max-width: 420px; width: 90%; margin: 10vh auto; }
+    .loader { display: none; margin-left: 10px; border: 3px solid #f3f3f3; border-radius: 50%; border-top: 3px solid #0d6efd; width: 18px; height: 18px; animation: spin 1s linear infinite; }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    .quick-prepaid-wrapper { gap: 4px; display: flex; flex-wrap: wrap; margin-top: 6px; }
+    .quick-prepaid-wrapper .btn-quick { font-size: 0.75rem; padding: 2px 6px; font-weight: bold; }
+    
+    /* ĐỊNH DẠNG CONTAINER ĐĂNG NHẬP CHUẨN */
+    .login-container { 
+      max-width: 420px; 
+      width: 90%; 
+      margin: 8vh auto 4vh auto; 
+      transition: all 0.3s ease;
+    }
+    
+    /* LOGO WRAPPER CÓ THỂ CO GIÃN MƯỢT MÀ */
+    .login-logo-wrap {
+      width: 85px;
+      height: 85px;
+      padding: 12px;
+      transition: all 0.3s ease;
+    }
+
+    /* TỰ ĐỘNG CO KHÔNG GIAN KHI CHẠY TRÊN ĐIỆN THOẠI (DƯỚI 576PX) */
+    @media (max-width: 576px) {
+      .login-container { 
+        margin: 3vh auto 2vh auto !important; 
+      }
+      .login-logo-wrap {
+        width: 70px !important; 
+        height: 70px !important;
+        padding: 9px !important;
+      }
+      .login-container .mb-3 {
+        margin-bottom: 0.75rem !important;
+      }
+      .login-container .mb-4 {
+        margin-bottom: 1rem !important;
+      }
+      .main-container {
+        margin: 0.5rem auto !important; 
+      }
+      #mainFormSection {
+        padding: 1rem !important;
+      }
+    }
+  </style>
 </head>
 <body>
+  <!-- PHÂN HỆ PHIẾU THU PDF IN ẤN (Gộp trực tiếp từ Phieu_thu.html) -->
+  <template id="receiptTemplateWrapper">
+    <div id="pdf-print-frame" style="padding: 0; font-family: 'Roboto', sans-serif; color: #000; width: 100%; background: #fff; box-sizing: border-box;">
+      <table style="width: 100%; border-collapse: collapse; margin-bottom: 25px;">
+        <tr>
+          <td style="width: 35%; vertical-align: top; font-size: 15px; line-height: 1.5; white-space: nowrap;">
+            <strong>Hệ thống thẩm mỹ Thu Cúc</strong><br>
+            Tổng đài : 19001920<br>
+            website: https://thammythucuc.vn
+          </td>
+          <td style="width: 30%; text-align: center; vertical-align: top;">
+            <h1 style="margin: 0; font-size: 26px; font-weight: bold; letter-spacing: 1px;">PHIẾU THU</h1>
+			<div>(Đặt cọc)</div>
+          </td>
+          <td style="width: 35%; vertical-align: top; font-size: 15px; line-height: 1.5; padding-left: 20px; white-space: nowrap;">
+            Mẫu : <b>PT-DTT</b><br>
+            Số : {{RECEIPT_NUMBER}}<br>
+            Ngày thu : {{DATE_STR}}<br>
+            NV thu : {{TELLER_NAME}}
+          </td>
+        </tr>
+      </table>
+      
+      <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 16px;">
+        <tr>
+          <td style="width: 50%; padding: 5px 0;"><b>Tên khách hàng :</b> {{PARTNER_NAME}}</td>
+          <td style="width: 50%; padding: 5px 0;"><b>Số ĐT :</b> {{MOBILE}}</td>
+        </tr>
+      </table>
+
+      <table style="width: 100%; border-collapse: collapse; margin-bottom: 5px; font-size: 16px;">
+        <thead>
+          <tr>
+            <th style="border-top: none; border-bottom: 1px solid #000; padding: 5px 0; text-align: left; width: 35%;">Nội dung thu</th>
+            <th style="border-top: none; border-bottom: 1px solid #000; padding: 5px 0; text-align: left; width: 45%;">Tham chiếu thanh toán</th>
+            <th style="border-top: none; border-bottom: 1px solid #000; padding: 5px 0; text-align: right; width: 20%;">Số tiền</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="padding: 15px 0; border-bottom: 1px solid #000; vertical-align: top;">Thu tiền cọc dịch vụ</td>
+            <td style="padding: 15px 0; border-bottom: 1px solid #000; vertical-align: top;">{{PAYMENT_REF}}</td>
+            <td style="padding: 15px 0; border-bottom: 1px solid #000; text-align: right; vertical-align: top;"><b>{{PREPAID}}</b></td>
+          </tr>
+        </tbody>
+      </table>
+      
+      <div style="text-align: right; font-weight: bold; font-size: 18px; margin-bottom: 20px;">
+        Tổng cộng: &nbsp;&nbsp;&nbsp;&nbsp; {{PREPAID}}
+      </div>
+	  <div style="text-align: left; font-style: italic; font-size: 14px; margin-bottom: 20px;">
+        Ghi chú: Không hoàn cọc nếu khách hàng tự ý hủy đặt hàng, dịch vụ
+      </div>
+
+      <table style="width: 100%; border-collapse: collapse; text-align: center; font-size: 16px;">
+        <tr>
+          <td style="width: 50%; vertical-align: top;">
+            <b>Khách hàng</b><br>
+            <i>(ký tên)</i>
+          </td>
+          <td style="width: 50%; vertical-align: top;">
+            <b>Người thu</b><br>
+            <i>(ký tên)</i>
+          </td>
+        </tr>
+      </table>
+    </div>
+  </template>
+
+  <!-- HỆ THỐNG TOAST THÔNG BÁO -->
+  <div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 1300;">
+    <div id="liveToast" class="toast align-items-center text-white border-0 shadow" role="alert" aria-live="assertive" aria-atomic="true">
+      <div class="d-flex">
+        <div class="toast-body fw-bold fs-6" id="toastMessage"></div>
+        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- HỘP THOẠI POPUP (MODAL) HIỂN THỊ MÃ QR -->
+  <div class="modal fade" id="qrModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content border-0 shadow-lg">
+        <div class="modal-header bg-primary text-white">
+          <h5 class="modal-title fw-bold">Mã QR Thanh Toán</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body text-center p-4">
+          <p class="text-muted small mb-2">Khách hàng quét mã dưới đây để thực hiện chuyển khoản</p>
+          <img id="qrImage" src="" alt="Mã QR" class="img-fluid border rounded p-2 mb-3 shadow-sm" style="max-height: 200px; display: none;">
+          <h4 class="text-danger fw-bold mt-2" id="qrAmountDisplay"></h4>
+        </div>
+        <div class="modal-footer justify-content-between p-3 bg-light">
+          <button type="button" onclick="confirmCollection()" class="btn btn-success w-100 py-3 fs-5 fw-bold d-flex justify-content-center align-items-center" id="btnModalCollect">
+            <span>XÁC NHẬN THU TIỀN</span> <div class="loader" id="modalCollectLoader"></div>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PHÂN HỆ MÀN HÌNH ĐĂNG NHẬP -->
+  <div id="loginSection" class="container bg-white p-3 p-sm-4 p-md-5 rounded shadow-sm login-container" style="border-top: 5px solid #009245;">
+    <div class="text-center mb-3 mb-sm-4">
+      <!-- LOGO THU CÚC BEAUTY TRÒN SANG TRỌNG -->
+      <div class="d-inline-flex align-items-center justify-content-center mb-2 mb-sm-3 rounded-circle shadow-sm login-logo-wrap" 
+           style="background-color: #009245; border: 2px solid rgba(255, 255, 255, 0.9);">
+        <img src="https://thucucsaigon.vn/m/images/logoT.png" 
+             alt="Thu Cuc Logo" 
+             style="max-width: 100%; max-height: 100%; object-fit: contain;">
+      </div>
+      <!-- TIÊU ĐỀ HỆ THỐNG -->
+      <h4 class="fw-bold tracking-tight mb-1" style="font-weight: 800; color: #1e293b; letter-spacing: -0.5px;">HỆ THỐNG QLDL SỰ KIỆN</h4>
+      <p class="text-muted small mb-0" style="font-size: 0.82rem;">Vui lòng đăng nhập tài khoản nội bộ</p>
+    </div>
+    
+    <div class="mb-3">
+      <label class="form-label small fw-bold text-secondary mb-1">Tên đăng nhập (Username)</label>
+      <input type="text" id="username" class="form-control" placeholder="Nhập tên tài khoản...">
+    </div>
+    <div class="mb-4">
+      <label class="form-label small fw-bold text-secondary mb-1">Mật khẩu</label>
+      <input type="password" id="password" class="form-control" placeholder="Nhập mật khẩu...">
+    </div>
+    
+    <!-- TRƯỜNG LỰA CHỌN MÀN HÌNH PHỤ QR -->
+    <div class="form-check mb-4 text-start">
+      <input class="form-check-input border-secondary" type="checkbox" id="showQrMode" style="transform: scale(1.15);">
+      <label class="form-check-label small fw-bold text-secondary ms-1" for="showQrMode" style="font-size: 0.85rem;">
+        Hiển thị QR thanh toán (Trên Smartphone)
+      </label>
+    </div>
+    
+    <!-- NÚT ĐĂNG NHẬP CHUYÊN NGHIỆP DUY NHẤT -->
+    <button type="button" onclick="handleLogin()" class="btn btn-success w-100 py-2.5 fw-bold d-flex justify-content-center align-items-center" id="btnLogin" style="background-color: #009245; border-color: #009245;">
+      <span>ĐĂNG NHẬP</span> <div class="loader" id="loginLoader"></div>
+    </button>
+  </div>
+
+  <!-- PHÂN HỆ MÀN HÌNH CHÍNH -->
+  <div id="mainFormSection" class="container bg-white p-4 p-md-5 rounded shadow-sm main-container" style="display: none;">
+    <div class="d-flex justify-content-between align-items-center mb-4 p-2 bg-light rounded border">
+      <span class="fw-bold text-secondary ms-2" style="font-size: 0.9rem;">
+        Tài khoản: <span id="displayConsultantName" class="text-primary"></span> 
+        (<span id="displayRole" class="text-danger text-uppercase small"></span>)
+      </span>
+      <div class="d-flex align-items-center gap-1.5">
+        <button id="btnResync" class="btn btn-sm btn-outline-success fw-bold d-flex align-items-center" onclick="triggerManualResync()" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Nhấn để đồng bộ lại các hồ sơ bị lỗi kết nối sang Odoo">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" class="bi bi-cloud-arrow-up me-1" viewBox="0 0 16 16">
+            <path fill-rule="evenodd" d="M7.646 5.146a.5.5 0 0 1 .708 0l2 2a.5.5 0 0 1-.708.708L8.5 6.707V10.5a.5.5 0 0 1-1 0V6.707L6.354 7.854a.5.5 0 1 1-.708-.708z"/>
+            <path d="M4.406 3.342A5.53 5.53 0 0 1 8 2c2.69 0 4.923 2 5.166 4.579C14.758 6.804 16 8.137 16 9.773 16 11.569 14.502 13 12.687 13H3.781C1.708 13 0 11.366 0 9.318c0-1.763 1.266-3.223 2.942-3.593.143-1.492.905-2.822 2.05-3.682m.257.859a4.526 4.526 0 0 0-1.611 2.724l-.15.713-.718.128C1.516 6.896 1 8.01 1 9.318 1 10.8 2.224 12 3.781 12h8.906C14.07 12 15 10.97 15 9.773c0-1.205-.996-2.18-2.225-2.18h-.543l-.117-.535C11.895 5.517 10.156 4 8 4a4.013 4.013 0 0 0-3.337 1.956l-.372.585-.43-.194c-.218-.1-.45-.156-.684-.162"/>
+          </svg>
+          <span style="font-size: 0.8rem;">Đồng bộ bù</span>
+        </button>
+        <button class="btn btn-sm btn-outline-danger fw-bold px-2.5 ms-1" style="font-size: 0.8rem;" onclick="handleLogout()">Đăng xuất</button>
+      </div>
+    </div>
+
+    <h2 class="text-center mb-4 text-primary fw-bold text-uppercase">Hồ Sơ Tư Vấn Sự Kiện</h2>
+    
+    <div class="mb-4 p-3 bg-light rounded border">
+      <label class="form-label fw-bold text-secondary">Tra cứu thông tin đăng ký (Bước 1)</label>
+      <div class="input-group input-group-lg">
+        <input type="text" id="search_mobile" class="form-control fs-6" placeholder="Nhập SĐT khách hàng rồi ấn Enter...">
+        <button class="btn btn-primary d-flex align-items-center fw-bold" type="button" onclick="checkMobile()" id="btnSearch">
+          <span>Tìm kiếm</span> <div class="loader" id="searchLoader"></div>
+        </button>
+      </div>
+      <div id="search_status" class="small mt-2 fw-medium"></div>
+    </div>
+
+    <hr class="mb-4 text-muted">
+
+    <div id="paymentStatusBanner" style="display: none;"></div>
+
+    <form id="eventForm">
+      <input type="hidden" id="rowId" name="rowId">
+      <input type="hidden" id="lastSignature" name="lastSignature">
+      
+      <div class="row">
+        <div class="col-md-5 mb-3">
+          <label class="form-label text-muted small mb-1 fw-bold">Tên khách hàng</label>
+          <input type="text" class="form-control role-field" id="partner_name" name="partner_name" required>
+        </div>
+        <div class="col-md-3 mb-3">
+          <label class="form-label text-muted small mb-1 fw-bold">Giới tính *</label>
+          <select class="form-select border-primary fw-medium role-field" id="gender" name="gender" required>
+            <option value="nu" selected>Nữ</option>
+            <option value="nam">Nam</option>
+          </select>
+        </div>
+        <div class="col-md-4 mb-3">
+          <label class="form-label text-muted small mb-1 fw-bold">Số điện thoại</label>
+          <input type="text" class="form-control role-field" id="mobile" name="mobile" required>
+        </div>
+      </div>
+      
+      <div class="row">
+        <div class="col-md-6 mb-3">
+          <label class="form-label text-muted small mb-1 fw-bold">Dịch vụ quan tâm ban đầu (Khách chọn)</label>
+          <input type="text" class="form-control bg-light" id="service" name="service" readonly>
+        </div>
+        <div class="col-md-6 mb-3">
+          <label class="form-label fw-bold text-primary">Dịch vụ tư vấn thực tế *</label>
+          <input class="form-control border-primary fw-medium role-field" list="consulting_service_list" id="consulting_service" name="consulting_service" autocomplete="off" required>
+          <datalist id="consulting_service_list"></datalist>
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label text-muted small mb-1 fw-bold">Nội dung tư vấn chi tiết *</label>
+        <textarea class="form-control border-primary role-field" id="content" name="content" rows="4" required></textarea>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label fw-bold text-primary">Cơ sở tiếp đón *</label>
+        <select class="form-select border-primary fw-medium role-field" id="branch" name="branch" required>
+          <option value="" selected disabled>-- Chọn cơ sở tiếp đón --</option>
+          <option value="BVTM Thu Cúc">BVTM Thu Cúc</option>
+          <option value="70 Cầu Giấy">70 Cầu Giấy</option>
+        </select>
+      </div>
+      
+      <div class="mb-3 p-3 bg-light border rounded form-check d-flex align-items-center">
+        <input type="checkbox" class="form-check-input ms-2 mt-0 me-3 role-field" id="ready_now" name="ready_now" style="transform: scale(1.4);">
+        <label class="form-check-label fw-bold text-success fs-6" for="ready_now">Khách đồng ý thực hiện dịch vụ ngay</label>
+      </div>
+
+      <div class="mb-4">
+        <label class="form-label fw-bold text-primary">Kết quả tư vấn *</label>
+        <select class="form-select border-primary fw-medium role-field" id="result" name="result" required>
+          <option value="" selected disabled>-- Chọn kết quả trạng thái --</option>
+          <option value="Đặt cọc">Đặt cọc</option>
+          <option value="Tiềm năng">Tiềm năng</option>
+          <option value="Tham khảo">Tham khảo</option>
+        </select>
+      </div>
+
+      <div class="row">
+        <div class="col-md-6 mb-3">
+          <label class="form-label text-muted small mb-1 fw-bold">Khoản tiền cọc (VNĐ)</label>
+          <div class="input-group">
+            <button class="btn btn-outline-secondary fw-bold px-3" type="button" onclick="stepPrepaid(-500000)">-</button>
+            <input type="text" class="form-control text-center fw-bold text-primary" id="prepaid" name="prepaid" value="0" inputmode="numeric" oninput="formatCurrency(this)">
+            <button class="btn btn-outline-secondary fw-bold px-3" type="button" onclick="stepPrepaid(500000)">+</button>
+          </div>
+          <div class="quick-prepaid-wrapper">
+            <button type="button" class="btn btn-sm btn-outline-primary btn-quick" onclick="setQuickPrepaid(500000)" data-bs-toggle="tooltip" data-bs-placement="bottom" title="500.000 VNĐ">500N</button>
+            <button type="button" class="btn btn-sm btn-outline-primary btn-quick" onclick="setQuickPrepaid(1000000)" data-bs-toggle="tooltip" data-bs-placement="bottom" title="1.000.000 VNĐ">1tr</button>
+            <button type="button" class="btn btn-sm btn-outline-primary btn-quick" onclick="setQuickPrepaid(2000000)" data-bs-toggle="tooltip" data-bs-placement="bottom" title="2.000.000 VNĐ">2tr</button>
+            <button type="button" class="btn btn-sm btn-outline-primary btn-quick" onclick="setQuickPrepaid(3000000)" data-bs-toggle="tooltip" data-bs-placement="bottom" title="3.000.000 VNĐ">3tr</button>
+            <button type="button" class="btn btn-sm btn-outline-primary btn-quick" onclick="setQuickPrepaid(4000000)" data-bs-toggle="tooltip" data-bs-placement="bottom" title="4.000.000 VNĐ">4tr</button>
+            <button type="button" class="btn btn-sm btn-outline-primary btn-quick" onclick="setQuickPrepaid(5000000)" data-bs-toggle="tooltip" data-bs-placement="bottom" title="5.000.000 VNĐ">5tr</button>
+            <button type="button" class="btn btn-sm btn-outline-primary btn-quick" onclick="setQuickPrepaid(6000000)" data-bs-toggle="tooltip" data-bs-placement="bottom" title="6.000.000 VNĐ">6tr</button>
+            <button type="button" class="btn btn-sm btn-outline-primary btn-quick" onclick="setQuickPrepaid(7000000)" data-bs-toggle="tooltip" data-bs-placement="bottom" title="7.000.000 VNĐ">7tr</button>
+            <button type="button" class="btn btn-sm btn-outline-primary btn-quick" onclick="setQuickPrepaid(8000000)" data-bs-toggle="tooltip" data-bs-placement="bottom" title="8.000.000 VNĐ">8tr</button>
+            <button type="button" class="btn btn-sm btn-outline-primary btn-quick" onclick="setQuickPrepaid(9000000)" data-bs-toggle="tooltip" data-bs-placement="bottom" title="9.000.000 VNĐ">9tr</button>
+            <button type="button" class="btn btn-sm btn-outline-primary btn-quick" onclick="setQuickPrepaid(10000000)" data-bs-toggle="tooltip" data-bs-placement="bottom" title="10.000.000 VNĐ">10tr</button>
+            <button type="button" class="btn btn-sm btn-outline-primary btn-quick" onclick="setQuickPrepaid(11000000)" data-bs-toggle="tooltip" data-bs-placement="bottom" title="11.000.000 VNĐ">11tr</button>
+            <button type="button" class="btn btn-sm btn-outline-primary btn-quick" onclick="setQuickPrepaid(12000000)" data-bs-toggle="tooltip" data-bs-placement="bottom" title="12.000.000 VNĐ">12tr</button>
+            <button type="button" class="btn btn-sm btn-outline-primary btn-quick" onclick="setQuickPrepaid(13000000)" data-bs-toggle="tooltip" data-bs-placement="bottom" title="13.000.000 VNĐ">13tr</button>
+            <button type="button" class="btn btn-sm btn-outline-primary btn-quick" onclick="setQuickPrepaid(14000000)" data-bs-toggle="tooltip" data-bs-placement="bottom" title="14.000.000 VNĐ">14tr</button>
+            <button type="button" class="btn btn-sm btn-outline-primary btn-quick" onclick="setQuickPrepaid(15000000)" data-bs-toggle="tooltip" data-bs-placement="bottom" title="15.000.000 VNĐ">15tr</button>
+            <button type="button" class="btn btn-sm btn-outline-primary btn-quick" onclick="setQuickPrepaid(16000000)" data-bs-toggle="tooltip" data-bs-placement="bottom" title="16.000.000 VNĐ">16tr</button>
+            <button type="button" class="btn btn-sm btn-outline-primary btn-quick" onclick="setQuickPrepaid(17000000)" data-bs-toggle="tooltip" data-bs-placement="bottom" title="17.000.000 VNĐ">17tr</button>
+            <button type="button" class="btn btn-sm btn-outline-primary btn-quick" onclick="setQuickPrepaid(18000000)" data-bs-toggle="tooltip" data-bs-placement="bottom" title="18.000.000 VNĐ">18tr</button>
+            <button type="button" class="btn btn-sm btn-outline-primary btn-quick" onclick="setQuickPrepaid(19000000)" data-bs-toggle="tooltip" data-bs-placement="bottom" title="19.000.000 VNĐ">19tr</button>
+            <button type="button" class="btn btn-sm btn-outline-primary btn-quick" onclick="setQuickPrepaid(20000000)" data-bs-toggle="tooltip" data-bs-placement="bottom" title="20.000.000 VNĐ">20tr</button>
+            <button type="button" class="btn btn-sm btn-outline-primary btn-quick" onclick="setQuickPrepaid(21000000)" data-bs-toggle="tooltip" data-bs-placement="bottom" title="21.000.000 VNĐ">21tr</button>
+            <button type="button" class="btn btn-sm btn-outline-primary btn-quick" onclick="setQuickPrepaid(22000000)" data-bs-toggle="tooltip" data-bs-placement="bottom" title="22.000.000 VNĐ">22tr</button>
+            <button type="button" class="btn btn-sm btn-outline-primary btn-quick" onclick="setQuickPrepaid(23000000)" data-bs-toggle="tooltip" data-bs-placement="bottom" title="23.000.000 VNĐ">23tr</button>
+            <button type="button" class="btn btn-sm btn-outline-primary btn-quick" onclick="setQuickPrepaid(24000000)" data-bs-toggle="tooltip" data-bs-placement="bottom" title="24.000.000 VNĐ">24tr</button>
+            <button type="button" class="btn btn-sm btn-outline-primary btn-quick" onclick="setQuickPrepaid(25000000)" data-bs-toggle="tooltip" data-bs-placement="bottom" title="25.000.000 VNĐ">25tr</button>
+            <button type="button" class="btn btn-sm btn-outline-primary btn-quick" onclick="setQuickPrepaid(30000000)" data-bs-toggle="tooltip" data-bs-placement="bottom" title="30.000.000 VNĐ">30tr</button>
+            <button type="button" class="btn btn-sm btn-outline-primary btn-quick" onclick="setQuickPrepaid(40000000)" data-bs-toggle="tooltip" data-bs-placement="bottom" title="40.000.000 VNĐ">40tr</button>
+          </div>
+        </div>
+        
+        <div class="col-md-6 mb-3" id="paymentMethodBlock" style="display: none;">
+          <label class="form-label fw-bold text-primary mb-1">Hình thức thanh toán *</label>
+          <div class="d-flex align-items-center gap-3 py-2 border rounded px-3 bg-white" style="min-height: 48px;">
+            <div class="form-check mb-0">
+              <input class="form-check-input" type="radio" name="payment_method" id="pay_qr" value="CK QR" onchange="handlePaymentMethodChange()">
+              <label class="form-check-label fw-bold text-dark small mb-0" for="pay_qr">CK QR</label>
+            </div>
+            <div class="form-check mb-0">
+              <input class="form-check-input" type="radio" name="payment_method" id="pay_cash" value="Tiền mặt" onchange="handlePaymentMethodChange()">
+              <label class="form-check-label fw-bold text-dark small mb-0" for="pay_cash">Tiền mặt</label>
+            </div>
+            <div class="form-check mb-0">
+              <input class="form-check-input" type="radio" name="payment_method" id="pay_pos" value="POS" onchange="handlePaymentMethodChange()">
+              <label class="form-check-label fw-bold text-dark small mb-0" for="pay_pos">POS</label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="paymentRefBlock" class="mb-4 p-3 bg-warning-subtle border border-warning rounded" style="display: none;">
+        <label class="form-label fw-bold text-dark">Tham chiếu thanh toán *</label>
+        <input type="text" class="form-control bg-white fw-bold text-danger" id="payment_ref" name="payment_ref" readonly>
+      </div>
+      
+      <button type="button" onclick="submitForm()" class="btn btn-success w-100 py-3 fs-5 fw-bold d-flex justify-content-center align-items-center" id="btnSubmit">
+        <span>LƯU HỒ SƠ</span> <div class="loader" id="submitLoader"></div>
+      </button>
+
+      <div id="cashierActionBlock" class="row g-2" style="display: none;">
+        <div class="col-md-5 col-12">
+          <button type="button" onclick="triggerShowQR()" class="btn btn-primary w-100 py-3 fs-5 fw-bold d-flex justify-content-center align-items-center" id="btnShowQR">
+            <span>HIỂN THỊ MÃ QR</span> <div class="loader" id="qrLoader"></div>
+          </button>
+        </div>
+        <div class="col-md-5 col-9">
+          <button type="button" onclick="confirmCollection()" class="btn btn-success w-100 py-3 fs-5 fw-bold d-flex justify-content-center align-items-center" id="btnCollect">
+            <span>XÁC NHẬN THU TIỀN</span> <div class="loader" id="collectLoader"></div>
+          </button>
+        </div>
+        <div class="col-md-2 col-3">
+          <button type="button" onclick="printReceipt()" class="btn btn-secondary w-100 py-3 d-flex justify-content-center align-items-center text-white" data-bs-toggle="tooltip" data-bs-placement="bottom" title="In phiếu thu" style="height: 100%;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-printer" viewBox="0 0 16 16">
+              <path d="M2.5 8a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1z"/>
+              <path d="M5 1a2 2 0 0 0-2 2v2H2a2 2 0 0 0-2 2v3a2 2 0 0 0 2 2h1v1a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2v-1h1a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-1V3a2 2 0 0 0-2-2H5zm7 2v3a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1z"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </form>
+
+    <!-- PHÂN HỆ NÂNG CẤP: BẢNG HÀNG ĐỢI & ĐỐI SOÁT CA TRỰC DÀNH RIÊNG CHO THU NGÂN -->
+    <div id="cashierDashboardBlock" style="display: none;" class="mt-4 pt-3 border-top">
+      <ul class="nav nav-pills nav-fill mb-3" id="cashierTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+          <button class="nav-link active fw-bold text-uppercase py-2.5 small d-flex align-items-center justify-content-center" id="queue-tab" data-bs-toggle="pill" data-bs-target="#cashierQueue" type="button" role="tab" aria-controls="cashierQueue" aria-selected="true" style="border-radius: 8px;">
+            ⏳ Hàng đợi cọc <span class="badge bg-danger ms-2 rounded-pill" id="queueCountBadge">0</span>
+          </button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link fw-bold text-uppercase py-2.5 small d-flex align-items-center justify-content-center ms-2" id="history-tab" data-bs-toggle="pill" data-bs-target="#cashierHistory" type="button" role="tab" aria-controls="cashierHistory" aria-selected="false" style="border-radius: 8px;">
+            📊 Nhật ký thu tiền
+          </button>
+        </li>
+      </ul>
+      
+      <div class="tab-content" id="cashierTabsContent">
+        <div class="tab-pane fade show active" id="cashierQueue" role="tabpanel" aria-labelledby="queue-tab">
+          <div class="p-2 mb-2 bg-light rounded-3 text-secondary small d-flex justify-content-between align-items-center">
+            <span>Nhấp vào thẻ khách hàng để nạp nhanh hồ sơ thanh toán:</span>
+            <span class="spinner-border spinner-border-sm text-secondary" id="queueLoader" style="display: none; width: 12px; height: 12px;"></span>
+          </div>
+          <div id="queueListContainer" class="pe-1" style="max-height: 280px; overflow-y: auto;">
+          </div>
+        </div>
+        
+        <div class="tab-pane fade" id="cashierHistory" role="tabpanel" aria-labelledby="history-tab">
+          <div class="row g-2 mb-3">
+            <div class="col-4">
+              <div class="p-2 text-white rounded-3 text-center shadow-sm" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
+                <div class="small fw-semibold text-white-50" style="font-size: 0.65rem;">CK QR</div>
+                <div class="fw-bold" style="font-size: 0.85rem;" id="reconQr">0đ</div>
+              </div>
+            </div>
+            <div class="col-4">
+              <div class="p-2 text-white rounded-3 text-center shadow-sm" style="background: linear-gradient(135deg, #ff9f43 0%, #ee5a24 100%);">
+                <div class="small fw-semibold text-white-50" style="font-size: 0.65rem;">Tiền mặt</div>
+                <div class="fw-bold" style="font-size: 0.85rem;" id="reconCash">0đ</div>
+              </div>
+            </div>
+            <div class="col-4">
+              <div class="p-2 text-white rounded-3 text-center shadow-sm" style="background: linear-gradient(135deg, #4f46e5 0%, #3730a3 100%);">
+                <div class="small fw-semibold text-white-50" style="font-size: 0.65rem;">POS</div>
+                <div class="fw-bold" style="font-size: 0.85rem;" id="reconPos">0đ</div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="p-2.5 bg-white rounded-3 border mb-3 text-center shadow-sm d-flex justify-content-between align-items-center">
+            <span class="text-secondary small fw-bold text-uppercase" style="font-size: 0.8rem;">Tổng thu toàn đợt của bạn:</span>
+            <span class="fs-5 fw-bold text-success" id="reconGrandTotal">0đ</span>
+          </div>
+          
+          <div id="historyListContainer" class="pe-1" style="max-height: 200px; overflow-y: auto;">
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- NHÚNG PHÂN HỆ MÀN HÌNH PHỤ QR (Gộp trực tiếp từ qr.html) -->
+  <div id="qrSection" style="display: none;">
+    <div id="qrMobileContainer" style="display: none; min-height: 100vh; background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); font-family: 'Roboto', sans-serif; padding: 20px;">
+      <div class="d-flex justify-content-between align-items-center mb-4 p-3 bg-white rounded-3 shadow-sm">
+        <div class="d-flex align-items-center">
+          <div style="width: 10px; height: 10px; border-radius: 50%; margin-right: 8px;" id="wsStatusDot" class="bg-danger animate-pulse"></div>
+          <span class="fw-bold text-secondary small" id="wsStatusText">Ngoại tuyến (Đang kết nối...)</span>
+          <button id="wsReconnectBtn" class="btn btn-sm btn-outline-danger border-0 p-0 ms-1.5 align-items-center justify-content-center" onclick="connectToWebSocket()" title="Kết nối lại ngay" style="display: none; border-radius: 50%; width: 24px; height: 24px;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" class="bi bi-arrow-clockwise" viewBox="0 0 16 16">
+              <path fill-rule="evenodd" d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2v1z"/>
+              <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658a.25.25 0 0 1-.41-.192z"/>
+            </svg>
+          </button>
+        </div>
+        <span class="badge bg-primary text-uppercase px-2 py-1" style="font-size: 0.7rem;">Màn hình QR</span>
+      </div>
+
+      <div id="qrIdleState" class="text-center py-5 bg-white rounded-4 shadow-lg mb-4" style="border: 2px dashed #0d6efd;">
+        <div class="mb-4">
+          <div class="spinner-grow text-primary" role="status" style="width: 3.5rem; height: 3.5rem;">
+            <span class="visually-hidden">Loading...</span>
+          </div>
+        </div>
+        <h4 class="fw-bold text-dark mb-2">Hệ Thống Sẵn Sàng</h4>
+        <p class="text-muted px-4 small">Vui lòng đợi trong giây lát, mã QR thanh toán sẽ tự động hiển thị tại đây khi thu ngân gửi yêu cầu.</p>
+        <div class="text-secondary small mt-3">Tài khoản: <span id="qrDisplayUser" class="fw-bold text-primary"></span></div>
+      </div>
+
+      <div id="qrActiveState" class="bg-white rounded-4 shadow-lg p-4 mb-4 text-center" style="display: none;">
+        <h5 class="text-success fw-bold mb-4 d-flex align-items-center justify-content-center">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-wallet2 me-2" viewBox="0 0 16 16">
+            <path d="M12.136.326A1.5 1.5 0 0 1 14 1.78V3h.5A1.5 1.5 0 0 1 16 4.5v9a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 0 13.5v-9A1.5 1.5 0 0 1 1.5 3H2V1.78a1.5 1.5 0 0 1 1.864-1.454zM3 3h9v-.22a.5.5 0 0 0-.622-.484L3.378 2.875A.5.5 0 0 0 3 3.352zm11.5 1H1.5a.5.5 0 0 0-.5.5v9a.5.5 0 0 0 .5.5h13a.5.5 0 0 0 .5-.5v-9a.5.5 0 0 0-.5-.5z"/>
+          </svg>
+          QUÉT MÃ THANH TOÁN
+        </h5>
+        <div id="qrPartnerName" class="fw-bold text-dark fs-3 mb-3 text-uppercase" style="letter-spacing: 0.5px; line-height: 1.2;">--</div>
+        <div class="position-relative d-inline-block p-2 bg-white border rounded-3 mb-3 shadow-sm" style="max-width: 280px; width: 100%;">
+          <img id="qrWsImage" src="" alt="Mã QR VietQR" class="img-fluid rounded" style="width: 100%; height: auto; display: block;">
+        </div>
+        <div id="qrAmount" class="fw-bold text-danger fs-2 mb-4">0đ</div>
+        <button type="button" onclick="resetQrToIdle()" class="btn btn-outline-secondary w-100 py-2.5 fw-bold">
+          XÁC NHẬN ĐÃ QUÉT
+        </button>
+      </div>
+
+      <div class="text-center">
+        <button type="button" onclick="handleLogout()" class="btn btn-link text-decoration-none text-muted small">Đăng xuất hệ thống</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- NHÚNG PHÂN HỆ MÀN HÌNH ĐIỀU PHỐI (Gộp trực tiếp từ dieu_phoi.html) -->
+  <div id="coordinatorSection" style="display: none;">
+    <div id="coordinatorMobileContainer" style="display: none; min-height: 100vh; background-color: #f4f6f9; font-family: 'Roboto', sans-serif; padding-bottom: 40px;">
+      <div class="navbar navbar-expand-lg navbar-dark shadow-sm mb-4 px-3 sticky-top" style="background-color: #009245 !important;">
+        <div class="container-fluid d-flex justify-content-between align-items-center">
+          <span class="navbar-brand fw-bold fs-6 text-uppercase d-flex align-items-center text-white">
+            <img src="https://thucucsaigon.vn/m/images/logoT.png" alt="Thu Cuc Beauty" class="me-2" style="height: 32px; object-fit: contain;">
+            <span class="badge bg-warning text-dark me-2 small" style="font-size: 0.65rem;">ĐIỀU PHỐI</span>
+            HỆ THỐNG PHÂN TUYẾN KH
+          </span>
+          <div class="d-flex align-items-center">
+            <button class="btn btn-sm btn-outline-light me-2 d-flex align-items-center" onclick="loadCoordinatorData()" title="Tải lại dữ liệu">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrow-clockwise" viewBox="0 0 16 16">
+                <path fill-rule="evenodd" d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2v1z"/>
+                <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658a.25.25 0 0 1-.41-.192z"/>
+              </svg>
+            </button>
+            <button class="btn btn-sm btn-danger fw-bold" onclick="handleLogout()">Đăng xuất</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="container">
+        <div class="p-2 mb-3 bg-white rounded-3 shadow-sm border text-secondary small d-flex justify-content-between align-items-center">
+          <div>Nhân viên: <span id="coordinatorDisplayName" class="fw-bold text-dark"></span></div>
+          <div class="text-muted" style="font-size: 0.7rem;"><span class="spinner-grow spinner-grow-sm text-success me-1" style="width: 8px; height: 8px;"></span> Tự động đồng bộ</div>
+        </div>
+
+        <div class="row g-3 mb-4">
+          <div class="col-6">
+            <div class="card border-0 shadow-sm text-white rounded-4 overflow-hidden" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
+              <div class="card-body p-3">
+                <div class="text-uppercase fw-bold text-white lh-1 mb-2" style="font-size: 0.85rem; letter-spacing: 0.8px; text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);">
+                  BVTM Thu Cúc
+                </div>
+                <div class="d-flex justify-content-between align-items-baseline flex-wrap gap-1">
+                  <div class="fs-1 fw-bold lh-1">
+                    <span id="statThuCuc">0</span><span style="font-size: 0.85rem; font-weight: normal; opacity: 0.85; margin-left: 1px;">KH</span>
+                  </div>
+                  <div class="fs-1 fw-bold lh-1 text-end flex-grow-1" id="pctThuCuc" style="opacity: 0.95;">0.0%</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="col-6">
+            <div class="card border-0 shadow-sm text-white rounded-4 overflow-hidden" style="background: linear-gradient(135deg, #4f46e5 0%, #3730a3 100%);">
+              <div class="card-body p-3">
+                <div class="text-uppercase fw-bold text-white lh-1 mb-2" style="font-size: 0.85rem; letter-spacing: 0.8px; text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);">
+                  70 Cầu Giấy
+                </div>
+                <div class="d-flex justify-content-between align-items-baseline flex-wrap gap-1">
+                  <div class="fs-1 fw-bold lh-1">
+                    <span id="statCauGiay">0</span><span style="font-size: 0.85rem; font-weight: normal; opacity: 0.85; margin-left: 1px;">KH</span>
+                  </div>
+                  <div class="fs-1 fw-bold lh-1 text-end flex-grow-1" id="pctCauGiay" style="opacity: 0.95;">0.0%</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mb-4">
+          <div class="input-group shadow-sm rounded-3 overflow-hidden" style="border: 1px solid #e2e8f0;">
+            <span class="input-group-text bg-white border-0 pe-1">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-search text-muted" viewBox="0 0 16 16">
+                <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001q.044.06.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1 1 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0"/>
+              </svg>
+            </span>
+            <input type="tel" id="searchMobileInput" class="form-control border-0 ps-2 fs-6 py-2.5" placeholder="Tìm nhanh theo SĐT khách hàng..." oninput="filterPendingList()" autocomplete="off">
+            <button class="btn btn-white border-0 text-muted pe-3 fw-bold" type="button" onclick="clearSearchInput()" id="btnClearSearch" style="display: none; background-color: #fff;">
+              &times;
+            </button>
+          </div>
+        </div>
+
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <span class="fw-bold text-dark" style="font-size: 0.95rem;">DANH SÁCH CHỜ PHÂN TUYẾN</span>
+          <span class="badge bg-danger rounded-pill px-2.5 py-1" id="pendingCountBadge">0</span>
+        </div>
+
+        <div id="coordinatorLoading" class="text-center py-5" style="display: none;">
+          <div class="spinner-border text-success" role="status" style="width: 2.5rem; height: 2.5rem;"></div>
+          <p class="text-muted small mt-2 fw-medium">Đang đồng bộ dữ liệu mới nhất...</p>
+        </div>
+
+        <div id="coordinatorPendingList"></div>
+
+        <div id="coordinatorEmptyState" class="text-center py-5 bg-white rounded-4 border shadow-sm" style="display: none; border-style: dashed !important;">
+          <div class="text-muted mb-3">
+            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" fill="currentColor" class="bi bi-clipboard2-check text-secondary" viewBox="0 0 16 16">
+              <path d="M9.5 0a.5.5 0 0 1 .5.5.5.5 0 0 0 .5.5.5.5 0 0 1 .5.5V2a.5.5 0 0 1-.5.5h-5A.5.5 0 0 1 5 2v-.5a.5.5 0 0 1 .5-.5.5.5 0 0 0 .5-.5.5.5 0 0 1 .5-.5h3Z"/>
+              <path d="M3 2.5a.5.5 0 0 1 .5-.5H4a.5.5 0 0 0 0-1h-.5A1.5 1.5 0 0 0 2 2.5v12A1.5 1.5 0 0 0 3.5 16h9a1.5 1.5 0 0 0 1.5-1.5v-12A1.5 1.5 0 0 0 12.5 1H12a.5.5 0 0 0 0 1h.5a.5.5 0 0 1 .5.5v12a.5.5 0 0 1-.5.5h-9a.5.5 0 0 1-.5-.5v-12Z"/>
+              <path d="M10.854 7.854a.5.5 0 0 0-.708-.708L7.5 9.793 6.354 8.793a.5.5 0 1 0-.708.708l1.5 1.5a.5.5 0 0 0 .708 0l3-3Z"/>
+            </svg>
+          </div>
+          <h5 class="fw-bold text-dark mb-1" id="emptyStateTitle">Đã Hoàn Thành</h5>
+          <p class="text-muted px-4 small" id="emptyStateText">Hiện tại không còn khách hàng nào đang chờ điều phối.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+  <script>
+    // ==============================================================================
+    // CẤU HÌNH LIÊN KẾT REST API GOOGLE APPS SCRIPT CỦA BẠN (DÙNG CHO NETLIFY)
+    // ==============================================================================
+    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzZqDzgdE7EEYRgYmz6Jnl7X7Sar2Uw_vndDwiYAhlhqxgZxnAC9X_E-CqTu59tsTUK/exec";
+
+    // Hàm gọi API trung tâm dùng cho Netlify (Bypass CORS bằng text/plain)
+    function callServerAPI(action, payload, successCallback, errorCallback) {
+      const requestBody = {
+        action: action,
+        data: payload
+      };
+
+      fetch(GAS_API_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "text/plain"
+        },
+        body: JSON.stringify(requestBody)
+      })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error("Lỗi HTTP! Trạng thái: " + response.status);
+        }
+        return response.json();
+      })
+      .then(data => {
+        if (successCallback) successCallback(data);
+      })
+      .catch(error => {
+        console.error("Lỗi API kết nối: ", error);
+        if (errorCallback) {
+          errorCallback(error);
+        } else {
+          showNotification("❌ Lỗi kết nối máy chủ: " + error.message, false);
+        }
+      });
+    }
+
+    // ==============================================================================
+    // BỘ ĐỊNH TUYẾN THÔNG MINH (HYBRID-RUNTIME ROUTER)
+    // Tự động phát hiện môi trường chạy: Native Web App (Google) hay REST API (Netlify)
+    // ==============================================================================
+    const isNativeGAS = (typeof google !== "undefined" && google.script && google.script.run);
+
+    function callServerAPI(action, payload, successCallback, errorCallback) {
+      const errHandler = errorCallback || function(err) {
+        showNotification("❌ Lỗi kết nối máy chủ: " + err.message, false);
+      };
+
+      if (isNativeGAS) {
+        const runner = google.script.run
+          .withSuccessHandler(successCallback)
+          .withFailureHandler(errHandler);
+
+        if (action === "checkLogin") {
+          runner.checkLogin(payload.username, payload.password);
+        } else if (action === "getServicesList") {
+          runner.getServicesList();
+        } else if (action === "searchCustomerByMobile") {
+          runner.searchCustomerByMobile(payload.mobile);
+        } else if (action === "submitConsultantForm") {
+          runner.submitConsultantForm(payload);
+        } else if (action === "submitCashierPayment") {
+          runner.submitCashierPayment(payload);
+        } else if (action === "triggerServerGetQR") {
+          runner.triggerServerGetQR(payload.prepaidAmount, payload.paymentRef, payload.partnerName, payload.token);
+        } else if (action === "getCoordinatorData") {
+          runner.getCoordinatorData(payload.token);
+        } else if (action === "updateDispatchBranch") {
+          runner.updateDispatchBranch(payload.rowId, payload.branchValue, payload.token);
+        } else if (action === "generateCode") {
+          runner.generateCode();
+        } else if (action === "syncPendingRows") {
+          runner.syncPendingRows(payload.token);
+        } else if (action === "getCashierQueueAndHistory") {
+          runner.getCashierQueueAndHistory(payload.token);
+        } else {
+          errHandler(new Error("Hành động xử lý phía máy chủ không hợp lệ!"));
+        }
+      } else {
+        const requestBody = {
+          action: action,
+          data: payload
+        };
+
+        fetch(GAS_API_URL, {
+          method: "POST",
+          headers: {
+            "Content-Type": "text/plain" 
+          },
+          body: JSON.stringify(requestBody)
+        })
+        .then(response => {
+          if (!response.ok) {
+            throw new Error("Lỗi HTTP! Trạng thái: " + response.status);
+          }
+          return response.json();
+        })
+        .then(data => {
+          if (successCallback) successCallback(data);
+        })
+        .catch(err => {
+          console.error("Lỗi cổng REST API: ", err);
+          errHandler(err);
+        });
+      }
+    }
+
+    window.onload = function() {
+      var savedName = sessionStorage.getItem('consultant_name');
+      var savedRole = sessionStorage.getItem('role');
+      var isQrMode = sessionStorage.getItem('is_qr_mode') === 'true';
+      var isCoordinatorMode = sessionStorage.getItem('is_coordinator_mode') === 'true';
+      var savedUsername = sessionStorage.getItem('username');
+
+      if (savedName && savedRole) { 
+        if (isCoordinatorMode) {
+          showCoordinatorForm(savedName); // Khôi phục màn hình điều phối khi F5
+        } else if (isQrMode && savedUsername) {
+          showQrForm(savedUsername);
+        } else {
+          showMainForm(savedName, savedRole);
+        }
+      }
+
+      document.getElementById('password').addEventListener('keydown', function(e) { if (e.key === 'Enter') handleLogin(); });
+      document.getElementById('search_mobile').addEventListener('keydown', function(e) { if (e.key === 'Enter') { e.preventDefault(); checkMobile(); } });
+
+      document.getElementById('prepaid').addEventListener('input', function() {
+        var prepaidValue = parseFloat(this.value.replace(/\D/g, '')) || 0;
+        var resultSelect = document.getElementById('result');
+        if (prepaidValue > 0) { resultSelect.value = "Đặt cọc"; } else { resultSelect.value = ""; }
+      });
+
+      var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+      var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl)
+      });
+    };
+
+    function handleLogin() {
+      var user = document.getElementById('username').value.trim();
+      var pass = document.getElementById('password').value.trim();
+      if (!user || !pass) { showNotification("⚠️ Vui lòng điền đủ tên tài khoản và mật khẩu.", false); return; }
+
+      document.getElementById('loginLoader').style.display = "inline-block";
+      document.getElementById('btnLogin').disabled = true;
+
+      // Đọc trạng thái tick chọn màn hình phụ QR
+      var isQrMode = document.getElementById('showQrMode').checked;
+
+      callServerAPI("checkLogin", { username: user, password: pass }, function(res) {
+        document.getElementById('loginLoader').style.display = "none";
+        document.getElementById('btnLogin').disabled = false;
+        if (res.success) {
+          sessionStorage.setItem('consultant_name', res.consultant_name);
+          sessionStorage.setItem('role', res.role);
+          sessionStorage.setItem('username', res.username);
+          sessionStorage.setItem('token', res.token); // Lưu Token bảo mật
+
+          // Định tuyến luồng xử lý theo phân quyền vai trò
+          if (res.role === 'điều phối') {
+            sessionStorage.setItem('is_coordinator_mode', 'true');
+            showCoordinatorForm(res.consultant_name);
+          } else if (isQrMode) {
+            sessionStorage.setItem('is_qr_mode', 'true');
+            showQrForm(res.username);
+          } else {
+            sessionStorage.setItem('is_qr_mode', 'false');
+            showMainForm(res.consultant_name, res.role);
+          }
+          showNotification("🚀 Đăng nhập hệ thống thành công!");
+        } else { showNotification("❌ " + res.msg, false); }
+      }, function() {
+        document.getElementById('loginLoader').style.display = "none";
+        document.getElementById('btnLogin').disabled = false;
+      });
+    }
+
+    function showMainForm(name, role) {
+      document.getElementById('loginSection').style.display = "none";
+      document.getElementById('mainFormSection').style.display = "block";
+      document.getElementById('displayConsultantName').innerText = name;
+      document.getElementById('displayRole').innerText = role;
+
+      var fields = document.querySelectorAll('.role-field');
+      var btnSubmit = document.getElementById('btnSubmit');
+
+      if (role === 'thu tiền') {
+        fields.forEach(function(field) { field.disabled = true; });
+        btnSubmit.classList.remove('d-flex');
+        btnSubmit.classList.add('d-none');
+        document.getElementById('cashierActionBlock').style.display = "flex";
+        document.getElementById('paymentRefBlock').style.display = "block"; 
+        
+        // HIỂN THỊ hình thức thanh toán cho Thu ngân
+        document.getElementById('paymentMethodBlock').style.display = "block"; 
+        
+        // HIỂN THỊ và Khởi chạy dữ liệu phân hệ Thu ngân
+        document.getElementById('cashierDashboardBlock').style.display = "block"; 
+        loadCashierDashboardData(); 
+      } else {
+        fields.forEach(function(field) { field.disabled = false; });
+        btnSubmit.classList.remove('d-none');
+        btnSubmit.classList.add('d-flex');
+        document.getElementById('cashierActionBlock').style.display = "none";
+        document.getElementById('paymentRefBlock').style.display = "none"; 
+        
+        // ẨN hình thức thanh toán cho Tư vấn
+        document.getElementById('paymentMethodBlock').style.display = "none"; 
+        
+        // ẨN phân hệ khi là Tư vấn
+        document.getElementById('cashierDashboardBlock').style.display = "none"; 
+        stopCashierAutoRefresh();
+      }
+
+      callServerAPI("getServicesList", {}, function(services) {
+        var dataList = document.getElementById('consulting_service_list');
+        dataList.innerHTML = ''; 
+        if (services && services.length > 0) {
+          services.forEach(function(s) { var opt = document.createElement('option'); opt.value = s; dataList.appendChild(opt); });
+        }
+      });
+    }
+
+    // Hàm tự động điều hướng quy định điền và khóa trường tham chiếu theo hình thức thanh toán
+    function handlePaymentMethodChange() {
+      var selectedRadio = document.querySelector('input[name="payment_method"]:checked');
+      if (!selectedRadio) return;
+
+      var method = selectedRadio.value;
+      var refInput = document.getElementById('payment_ref');
+      var partnerName = document.getElementById('partner_name').value;
+      var mobile = document.getElementById('mobile').value;
+      var rowId = document.getElementById('rowId').value;
+
+      if (method === "POS") {
+        // Nếu chọn POS: gỡ readonly cho nhân viên tự gõ
+        refInput.value = generatePaymentRef(partnerName, mobile, method);
+        refInput.removeAttribute('readonly');
+        refInput.focus();
+      } else {
+        // Các trường hợp còn lại: khóa readonly
+        refInput.setAttribute('readonly', 'true');
+
+        if (method === "CK QR") {
+          refInput.value = generatePaymentRef(partnerName, mobile, method);
+        } else if (method === "Tiền mặt") {
+          refInput.value = generatePaymentRef(partnerName, mobile, method);
+        }
+      }
+    }
+
+    // Hàm kích hoạt phân hệ hiển thị màn hình phụ QR
+    function showQrForm(username) {
+      document.getElementById('loginSection').style.display = "none";
+      document.getElementById('mainFormSection').style.display = "none";
+      
+      // Hiển thị khung chứa qr.html và chạy kết nối WebSocket
+      var qrSection = document.getElementById('qrSection');
+      qrSection.style.display = "block";
+      document.getElementById('qrMobileContainer').style.display = "block";
+      
+      // Thay đổi nhẹ CSS nền của body để tối ưu hóa hiển thị di động
+      document.body.style.background = "none";
+      
+      // Gọi khởi chạy WebSocket trong qr.html
+      initQrWebSocket(username);
+    }
+
+    // Hàm kích hoạt phân hệ hiển thị màn hình của Nhân viên điều phối
+    function showCoordinatorForm(name) {
+      document.getElementById('loginSection').style.display = "none";
+      document.getElementById('mainFormSection').style.display = "none";
+      document.getElementById('qrSection').style.display = "none";
+      
+      var coordSection = document.getElementById('coordinatorSection');
+      coordSection.style.display = "block";
+      document.getElementById('coordinatorMobileContainer').style.display = "block";
+      document.getElementById('coordinatorDisplayName').innerText = name;
+      
+      // Kích hoạt nạp dữ liệu thống kê từ Sheet lên di động
+      loadCoordinatorData();
+    }
+
+    function generatePaymentRef(name, mobile, method) {
+	  var lsymbol = 'B';
+	  if (method === "POS") {
+		lsymbol = 'P';
+	  } else if (method === "Tiền mặt") {
+		lsymbol = 'C';
+	  }
+      var code = 'SK' + String(document.getElementById('rowId').value).padStart(4, '0') + lsymbol;
+      return code + ", " + mobile + ", " + removeVietnameseTones(name) + " dat coc";
+    }
+
+    // Hàm xử lý đăng xuất hệ thống (Đã bổ sung dọn dẹp timer điều phối chạy ngầm)
+    function handleLogout() {
+      sessionStorage.clear(); // Xóa sạch bộ nhớ tạm
+      
+      // DỌN DẸP TIMERS CHẠY NGẦM
+      if (typeof stopAutoRefresh === "function") {
+        stopAutoRefresh();
+      }
+      if (typeof stopCashierAutoRefresh === "function") {
+        stopCashierAutoRefresh();
+      }
+
+      clearPaymentStatusBanner();
+
+      // Ẩn tất cả các phân hệ giao diện phụ
+      document.getElementById('mainFormSection').style.display = "none";
+      document.getElementById('qrSection').style.display = "none";
+      document.getElementById('qrMobileContainer').style.display = "none";
+      document.getElementById('coordinatorSection').style.display = "none";
+      
+      // Trả về màn hình đăng nhập chuẩn
+      document.body.style.background = ""; 
+      document.getElementById('loginSection').style.display = "block";
+      document.getElementById('eventForm').reset();
+    }
+
+    function triggerShowQR() {
+      var rowId = document.getElementById('rowId').value;
+      var partnerName = document.getElementById('partner_name').value;
+      var mobile = document.getElementById('mobile').value;
+      var rawPrepaid = parseFloat(document.getElementById('prepaid').value.replace(/\D/g, '')) || 0;
+
+      if (!rowId) { showNotification("⚠️ Vui lòng tra cứu khách hàng trước!", false); return; }
+      if (rawPrepaid <= 0) { showNotification("⚠️ Vui lòng nhập số tiền cọc lớn hơn 0 để tạo mã QR!", false); return; }
+
+      var qrRadio = document.getElementById('pay_qr');
+      var checkedMethod = document.querySelector('input[name="payment_method"]:checked');
+      if (qrRadio && !checkedMethod) {
+        qrRadio.checked = true;
+        handlePaymentMethodChange(); // Gọi hàm sinh mã tự tăng
+      }
+      
+      var paymentRef = document.getElementById('payment_ref').value;
+      if (!paymentRef) {
+        paymentRef = generatePaymentRef(partnerName, mobile);
+        document.getElementById('payment_ref').value = paymentRef;
+      }
+
+      var btnShowQR = document.getElementById('btnShowQR');
+      var qrLoader = document.getElementById('qrLoader');
+      if (btnShowQR && qrLoader) { btnShowQR.disabled = true; qrLoader.style.display = "inline-block"; }
+
+      var secureToken = sessionStorage.getItem('token') || "";
+
+      callServerAPI("triggerServerGetQR", { prepaidAmount: rawPrepaid, paymentRef: paymentRef, partnerName: partnerName, token: secureToken }, function(res) {
+        if (btnShowQR && qrLoader) { btnShowQR.disabled = false; qrLoader.style.display = "none"; }
+
+        if (res.success) { 
+          try {
+            var rawData = JSON.parse(res.content);
+            if (Array.isArray(rawData) && rawData.length > 0) { rawData = rawData[0]; }
+            if (rawData.json) { rawData = rawData.json; }
+
+            rawData = rawData.extras;
+            if (rawData.code && rawData.code !== "00") {
+              showNotification("⚠️ Tạo mã QR có lỗi: " + (rawData.desc || "Vui lòng cấu hình lại Node."), false);
+              return;
+            }
+
+            var qrBase64 = rawData.qrDataURL || (rawData.data && rawData.data.qrDataURL);
+            
+            if (qrBase64) {
+              if (!qrBase64.startsWith('data:image')) { qrBase64 = 'data:image/png;base64,' + qrBase64; }
+
+              var qrImageEl = document.getElementById('qrImage');
+              qrImageEl.src = qrBase64;
+              qrImageEl.style.display = 'inline-block';
+              
+              document.getElementById('qrAmountDisplay').innerText = document.getElementById('prepaid').value + ' VNĐ';
+
+              var qrModal = new bootstrap.Modal(document.getElementById('qrModal'));
+              qrModal.show();
+            } else { showNotification("⚠️ Thành công nhưng không tìm thấy ảnh QR.", false); }
+          } catch (e) { showNotification("❌ Lỗi cấu trúc QR: " + e.message, false); }
+        } else { showNotification("❌ Lỗi API kết nối: " + res.msg, false); }
+      }, function() {
+        if (btnShowQR && qrLoader) { btnShowQR.disabled = false; qrLoader.style.display = "none"; }
+      }); 
+    }
+
+    function confirmCollection() {
+      var rowId = document.getElementById('rowId').value.trim();
+      if (!rowId) { showNotification("⚠️ Vui lòng tra cứu thông tin hóa đơn cần thu!", false); return; }
+
+      // BẮT BUỘC: Kiểm tra nhân viên đã chọn hình thức thanh toán chưa
+      var checkedMethodEl = document.querySelector('input[name="payment_method"]:checked');
+      if (!checkedMethodEl) {
+        showNotification("⚠️ LỖI: Vui lòng chọn Hình thức thanh toán (CK QR, Tiền mặt, hoặc POS)!", false);
+        return;
+      }
+      var paymentMethod = checkedMethodEl.value;
+
+      var paymentRef = document.getElementById('payment_ref').value.trim();
+      
+      // Ràng buộc nếu chưa điền tham chiếu khi chọn POS
+      if (paymentMethod === "POS" && !paymentRef) {
+        showNotification("⚠️ LỖI: Hình thức POS bắt buộc phải nhập mã tham chiếu giao dịch!", false);
+        return;
+      }
+
+      // Nếu là các hình thức khác mà bằng cách nào đó trống, chạy hàm kích hoạt để bổ sung tự động
+      if (!paymentRef) {
+        handlePaymentMethodChange();
+        paymentRef = document.getElementById('payment_ref').value.trim();
+      }
+
+      document.getElementById('collectLoader').style.display = "inline-block";
+      document.getElementById('btnCollect').disabled = true;
+      
+      var modalCollectLoader = document.getElementById('modalCollectLoader');
+      var btnModalCollect = document.getElementById('btnModalCollect');
+      if (modalCollectLoader && btnModalCollect) {
+        modalCollectLoader.style.display = "inline-block";
+        btnModalCollect.disabled = true;
+      }
+
+      var rawPrepaid = parseFloat(document.getElementById('prepaid').value.replace(/\D/g, '')) || 0;
+
+      // Đã cập nhật: Gửi kèm trường payment_method sang cho Code.gs ghi vào cột Q
+      var paymentData = {
+        rowId: rowId,
+        mobile: document.getElementById('mobile').value,
+        payment_ref: paymentRef,
+        prepaid: rawPrepaid,
+        teller: sessionStorage.getItem('consultant_name'),
+        username: sessionStorage.getItem('username'),
+        payment_method: paymentMethod, // TRUYỀN HÌNH THỨC THANH TOÁN SANG API
+        token: sessionStorage.getItem('token') // Truyền token xác thực
+      };
+
+      callServerAPI("submitCashierPayment", paymentData, function(res) {
+        document.getElementById('collectLoader').style.display = "none";
+        document.getElementById('btnCollect').disabled = false;
+        if (modalCollectLoader && btnModalCollect) { modalCollectLoader.style.display = "none"; btnModalCollect.disabled = false; }
+
+        if (res.success) {
+          printReceipt();
+          if (res.msg) {
+            showNotification("⚠️ " + res.msg, false);
+          } else {
+            showNotification("💰 Đã xác nhận thu tiền và cập nhật đồng bộ hệ thống thành công!");
+          }
+          
+          var qrModalEl = document.getElementById('qrModal');
+          var modalInstance = bootstrap.Modal.getInstance(qrModalEl);
+          if (modalInstance) { modalInstance.hide(); }
+
+          document.getElementById('eventForm').reset();
+          document.getElementById('search_mobile').value = "";
+          document.getElementById('search_status').innerText = "";
+          document.getElementById('rowId').value = "";
+          document.getElementById('prepaid').value = "0";
+          document.getElementById('payment_ref').value = "";
+          
+          // Reset lại lựa chọn radio button sau khi lưu thành công
+          document.querySelectorAll('input[name="payment_method"]').forEach(function(r) { r.checked = false; });
+          document.getElementById('qrImage').src = "";
+          clearPaymentStatusBanner();
+          loadCashierDashboardData();
+        } else { showNotification("❌ Lỗi: " + res.msg, false); }
+      }, function() {
+        document.getElementById('collectLoader').style.display = "none";
+        document.getElementById('btnCollect').disabled = false;
+        if (modalCollectLoader && btnModalCollect) { modalCollectLoader.style.display = "none"; btnModalCollect.disabled = false; }
+      });
+    }
+
+    // ================= LUỒNG XỬ LÝ TẠO VÀ IN PHIẾU THU TRỰC TIẾP KHỔ A4 (TỰ ĐỘNG TẠO MÃ NẾU TRỐNG) =================
+    function printReceipt() {
+      var partnerName = document.getElementById('partner_name').value;
+      var mobile = document.getElementById('mobile').value;
+      var rawPrepaid = document.getElementById('prepaid').value;
+      var serviceName = document.getElementById('consulting_service').value || document.getElementById('service').value;
+      var tellerName = sessionStorage.getItem('consultant_name') || 'Thu ngân';
+      var paymentRef = document.getElementById('payment_ref').value;
+
+      // NẾU CHƯA CÓ MÃ THAM CHIẾU (PAYMENT_REF), TỰ ĐỘNG TẠO SỐ NGẪU NHIÊN 6 CHỮ SỐ
+      if (!paymentRef) {
+        var code = 'SK' + String(document.getElementById('rowId').value).padStart(4, '0') + 'C';
+        document.getElementById('payment_ref').value = code;
+        paymentRef = code;
+      }
+
+      var receiptNumber = paymentRef.split(',')[0].trim();
+      var now = new Date();
+      
+      // Điều chỉnh chỉ lấy ngày/tháng/năm giờ:phút (không lấy phần giây)
+      var dateStr = ('0' + now.getDate()).slice(-2) + '/' + 
+                    ('0' + (now.getMonth() + 1)).slice(-2) + '/' + 
+                    now.getFullYear() + ' ' + 
+                    ('0' + now.getHours()).slice(-2) + ':' + 
+                    ('0' + now.getMinutes()).slice(-2);
+
+      // 1. Lấy mã HTML thô từ file PhieuThu.html thông qua thẻ template ẩn
+      var templateHtml = document.getElementById('receiptTemplateWrapper').innerHTML;
+
+      // 2. Tiêm dữ liệu động vào các điểm đánh dấu (Placeholder)
+      var printContent = templateHtml
+        .replace(/{{RECEIPT_NUMBER}}/g, receiptNumber)
+        .replace(/{{DATE_STR}}/g, dateStr)
+        .replace(/{{TELLER_NAME}}/g, tellerName)
+        .replace(/{{PARTNER_NAME}}/g, partnerName)
+        .replace(/{{MOBILE}}/g, mobile)
+        .replace(/{{SERVICE_NAME}}/g, serviceName)
+        .replace(/{{PAYMENT_REF}}/g, paymentRef)
+        .replace(/{{PREPAID}}/g, rawPrepaid);
+
+      // 3. Khởi tạo một iframe ẩn để thực hiện lệnh in trực tiếp
+      var iframe = document.createElement('iframe');
+      iframe.style.position = 'fixed';
+      iframe.style.right = '0';
+      iframe.style.bottom = '0';
+      iframe.style.width = '0';
+      iframe.style.height = '0';
+      iframe.style.border = '0';
+      iframe.style.zIndex = '-1000';
+      document.body.appendChild(iframe);
+
+      // 4. Ghi nội dung phiếu thu và cấu hình CSS khổ giấy A4, ẩn Header/Footer của trình duyệt
+      var doc = iframe.contentWindow.document;
+      doc.open();
+      doc.write('<html><head><title>In Phieu Thu</title>');
+      doc.write('<link rel="preconnect" href="https://fonts.googleapis.com">');
+      doc.write('<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>');
+      doc.write('<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">');
+      
+      doc.write('<style>');
+      doc.write('@media print { @page { size: A4 portrait; margin: 0; } }'); 
+      doc.write('body { margin: 0; padding: 0; font-family: "Roboto", sans-serif !important; background: #fff; }');
+      doc.write('#pdf-print-frame { font-family: "Roboto", sans-serif !important; width: 210mm !important; max-width: 210mm !important; padding: 15mm 20mm 15mm 20mm !important; box-sizing: border-box; margin: 0 auto; }');
+      doc.write('</style>');
+      
+      doc.write('</head><body>');
+      doc.write(printContent);
+      doc.write('</body></html>');
+      doc.close();
+
+      showNotification("⏳ Đang chuẩn bị bản in...");
+
+      // 5. Chờ tài nguyên load xong rồi gọi hộp thoại in của trình duyệt
+      setTimeout(function() {
+        iframe.contentWindow.focus();
+        iframe.contentWindow.print();
+        
+        // Loại bỏ iframe khỏi bộ nhớ sau khi in xong
+        document.body.removeChild(iframe);
+      }, 500);
+    }
+
+    function showNotification(message, isSuccess = true) {
+      var toastEl = document.getElementById('liveToast');
+      var toastMessage = document.getElementById('toastMessage');
+      toastMessage.innerText = message;
+      if (isSuccess) { toastEl.classList.remove('bg-danger'); toastEl.classList.add('bg-success'); } 
+      else { toastEl.classList.remove('bg-success'); toastEl.classList.add('bg-danger'); }
+      new bootstrap.Toast(toastEl, { delay: 4000 }).show();
+    }
+
+    function formatCurrency(input) {
+      let value = input.value.replace(/\D/g, '');
+      if (value === '') value = '0';
+      input.value = parseInt(value, 10).toLocaleString('vi-VN');
+      autoUpdateResult();
+    }
+
+    function stepPrepaid(amount) {
+      let input = document.getElementById('prepaid');
+      let currentVal = parseInt(input.value.replace(/\D/g, ''), 10) || 0;
+      let newVal = currentVal + amount;
+      if (newVal < 0) newVal = 0;
+      input.value = newVal.toLocaleString('vi-VN');
+      autoUpdateResult();
+    }
+
+    // ĐÃ MỞ QUYỀN CHO TƯ VẤN: Hàm áp dụng nhanh khoản tiền cọc cố định
+    function setQuickPrepaid(amount) {
+      let input = document.getElementById('prepaid');
+      input.value = amount.toLocaleString('vi-VN');
+      autoUpdateResult();
+    }
+
+    function autoUpdateResult() {
+      var prepaidValue = parseInt(document.getElementById('prepaid').value.replace(/\D/g, ''), 10) || 0;
+      var resultSelect = document.getElementById('result');
+      if (prepaidValue > 0) { resultSelect.value = "Đặt cọc"; } else { resultSelect.value = ""; }
+    }
+
+    function checkMobile() {
+      var mobile = document.getElementById('search_mobile').value.trim();
+      if (!mobile) { showNotification("⚠️ Vui lòng nhập số điện thoại để tra cứu.", false); return; }
+      
+      // XÓA TRẮNG BANNER CŨ KHI BẮT ĐẦU TÌM KIẾM MỚI
+      clearPaymentStatusBanner();
+      
+      document.getElementById('search_status').innerText = "Đang xử lý tìm kiếm dữ liệu...";
+      document.getElementById('search_status').className = "small mt-2 text-secondary";
+      document.getElementById('searchLoader').style.display = "inline-block";
+      document.getElementById('btnSearch').disabled = true;
+      
+      callServerAPI("searchCustomerByMobile", { mobile: mobile }, function(res) {
+        document.getElementById('searchLoader').style.display = "none";
+        document.getElementById('btnSearch').disabled = false;
+        
+        document.getElementById('payment_ref').value = res.payment_ref || "";
+
+        // BỔ SUNG: Đồng bộ khôi phục lại lựa chọn Radio hình thức thanh toán cũ (nếu có)
+        var savedMethod = res.payment_method || "";
+        console.log(res);
+        var foundRadio = false;
+        document.querySelectorAll('input[name="payment_method"]').forEach(function(radio) {
+          if (radio.value === savedMethod) {
+            radio.checked = true;
+            foundRadio = true;
+          } else {
+            radio.checked = false;
+          }
+        });
+        // Nếu có dữ liệu cũ, chạy hàm kích hoạt khóa/mở readonly tương ứng
+        if (foundRadio) {
+          handlePaymentMethodChange();
+        } 
+
+        if(res.success) {
+          document.getElementById('rowId').value = res.row;
+          document.getElementById('partner_name').value = res.partner_name;
+          document.getElementById('mobile').value = mobile;
+          document.getElementById('service').value = res.service;
+          document.getElementById('consulting_service').value = res.consulting_service || "";
+          document.getElementById('prepaid').value = res.prepaid ? parseInt(res.prepaid, 10).toLocaleString('vi-VN') : "0";
+          document.getElementById('branch').value = res.branch || "BVTM Thu Cúc";
+          document.getElementById('content').value = res.content || "";
+          document.getElementById('ready_now').checked = res.ready_now === true;
+          document.getElementById('result').value = res.result || "";
+          document.getElementById('payment_ref').value = res.payment_ref || "";
+          document.getElementById('lastSignature').value = res.signature || ""; // Gán chữ ký bảo vệ chống ghi đè
+          
+          // KÍCH HOẠT HIỂN THỊ BANNER NHẬN DIỆN TRẠNG THÁI THANH TOÁN CHO NHÂN VIÊN
+          var statusBanner = document.getElementById('paymentStatusBanner');
+          if (statusBanner) {
+            statusBanner.style.display = "flex";
+            if (res.payment_done) {
+              statusBanner.className = "alert alert-success d-flex align-items-center mb-4 p-3 rounded-3 shadow-sm border-0 fw-bold text-success bg-success-subtle";
+              statusBanner.innerHTML = `
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-check-circle-fill me-2" viewBox="0 0 16 16">
+                  <path d="M16 8A7 7 0 1 1 0 8a7 7 0 0 1 16 0m-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/>
+                </svg>
+                <span>💰 KHÁCH HÀNG ĐÃ HOÀN TẤT THANH TOÁN (ĐÃ ĐẶT CỌC)</span>
+              `;
+            } else {
+              statusBanner.className = "alert alert-warning d-flex align-items-center mb-4 p-3 rounded-3 shadow-sm border-0 fw-bold text-warning bg-warning-subtle";
+              statusBanner.innerHTML = `
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-exclamation-triangle-fill me-2" viewBox="0 0 16 16">
+                  <path d="M8.982 1.566a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767zM8 5c.535 0 .954.462.9.995l-.35 3.507a.552.55 0 0 1-1.1 0L7.1 5.995A.905.905 0 0 1 8 5m.002 6a1 1 0 1 1 0 2 1 1 0 0 1 0-2"/>
+                </svg>
+                <span>⏳ KHÁCH HÀNG CHƯA ĐẶT CỌC / CHƯA THANH TOÁN</span>
+              `;
+            }
+          }
+
+          document.getElementById('search_status').className = "small mt-2 text-success fw-bold";
+          document.getElementById('search_status').innerText = "✅ Tìm thấy thông tin!";
+          //showNotification("✅ Đã kế thừa dữ liệu khách hàng thành công!");
+        } else {
+          document.getElementById('search_status').className = "small mt-2 text-danger fw-bold";
+          document.getElementById('search_status').innerText = "❌ " + res.msg;
+          showNotification("⚠️ " + res.msg, false);
+          if (sessionStorage.getItem('role') === 'tư vấn') {
+            document.getElementById('mobile').value = mobile;
+            document.getElementById('service').value = "Khách vãng lai tự đến";
+            document.getElementById('branch').value = "BVTM Thu Cúc";
+          }
+        }
+      }, function() {
+        document.getElementById('searchLoader').style.display = "none";
+        document.getElementById('btnSearch').disabled = false;
+      });
+    }
+
+    // Hàm chuyển đổi tiếng Việt có dấu thành không dấu và viết hoa
+    function removeVietnameseTones(str) {
+      if (!str) return '';
+      return str
+        .normalize('NFD')                             // Tách dấu tổ hợp ra khỏi chữ cái gốc
+        .replace(/[\u0300-\u036f]/g, '')             // Xóa bỏ tất cả các dấu tổ hợp đã tách
+        .replace(/[đĐ]/g, m => m === 'đ' ? 'd' : 'D') // Chuyển đổi đ/Đ thành d/D
+        .toUpperCase()                                // Chuyển thành chữ in hoa
+        .trim();                                      // Loại bỏ khoảng trắng thừa ở hai đầu
+    }
+
+    function submitForm() {
+      var form = document.getElementById('eventForm');
+      if (!form.partner_name.value.trim() || !form.mobile.value.trim() || !form.consulting_service.value.trim() || !form.result.value || !form.branch.value || !form.content.value.trim()) {
+        showNotification("⚠️ LỖI: Vui lòng điền đầy đủ thông tin tại các trường bắt buộc (*)", false); return;
+      }
+      document.getElementById('submitLoader').style.display = "inline-block";
+      document.getElementById('btnSubmit').disabled = true;
+
+      var rawPrepaid = parseFloat(form.prepaid.value.replace(/\D/g, '')) || 0;
+      var formData = {
+        rowId: form.rowId.value, partner_name: form.partner_name.value, gender: form.gender.value,
+        mobile: form.mobile.value, service: form.service.value, consulting_service: form.consulting_service.value.trim(),
+        result: form.result.value, prepaid: rawPrepaid, branch: form.branch.value, content: form.content.value,
+        ready_now: form.ready_now.checked, consultant_name: sessionStorage.getItem('consultant_name'),
+        last_signature: document.getElementById('lastSignature').value,
+        token: sessionStorage.getItem('token') // Truyền token xác thực
+      };
+      
+      callServerAPI("submitConsultantForm", formData, function(res) {
+        document.getElementById('submitLoader').style.display = "none";
+        document.getElementById('btnSubmit').disabled = false;
+        
+        if (res.success) {
+          if (res.msg) {
+            showNotification("⚠️ " + res.msg, false);
+          } else {
+            showNotification("🚀 Hồ sơ đã được lưu và đồng bộ Odoo thành công!");
+          }
+          form.reset(); 
+          document.getElementById('search_mobile').value = ""; 
+          document.getElementById('search_status').innerText = ""; 
+          document.getElementById('rowId').value = ""; 
+          document.getElementById('prepaid').value = "0";
+          document.getElementById('lastSignature').value = ""; 
+          clearPaymentStatusBanner();
+        } else {
+          showNotification("⚠️ " + res.msg, false);
+        }
+      }, function() {
+        document.getElementById('submitLoader').style.display = "none";
+        document.getElementById('btnSubmit').disabled = false;
+      });
+    }
+
+    // ==============================================================================
+    // PHÂN HỆ NÂNG CẤP: LOGIC HÀNG ĐỢI & ĐỐI SOÁT CA CHO THU NGÂN
+    // ==============================================================================
+    var cashierSilentInterval = null;
+
+    // Hàm gọi nạp dữ liệu từ máy chủ
+    function loadCashierDashboardData() {
+      var loader = document.getElementById('queueLoader');
+      if (loader) loader.style.display = "inline-block";
+      
+      var secureToken = sessionStorage.getItem('token') || "";
+      callServerAPI("getCashierQueueAndHistory", { token: secureToken }, function(res) {
+        if (loader) loader.style.display = "none";
+        updateCashierDashboardUI(res);
+        startCashierAutoRefresh();
+      }, function() {
+        if (loader) loader.style.display = "none";
+      }); 
+    }
+
+    // Khởi động đồng bộ dữ liệu ngầm mỗi 1 phút
+    function startCashierAutoRefresh() {
+      stopCashierAutoRefresh();
+      cashierSilentInterval = setInterval(function() {
+        var isCashier = sessionStorage.getItem('role') === 'thu tiền';
+        var dashboard = document.getElementById('cashierDashboardBlock');
+        if (isCashier && dashboard && dashboard.style.display !== "none") {
+          var secureToken = sessionStorage.getItem('token') || "";
+          callServerAPI("getCashierQueueAndHistory", { token: secureToken }, updateCashierDashboardUI); 
+        }
+      }, 60000);
+    }
+
+    // Hàm tắt luồng đồng bộ ngầm khi logout
+    function stopCashierAutoRefresh() {
+      if (cashierSilentInterval) {
+        clearInterval(cashierSilentInterval);
+        cashierSilentInterval = null;
+      }
+    }
+
+    // Hàm cập nhật dữ liệu và render giao diện Hàng đợi & Đối soát ca
+    function updateCashierDashboardUI(res) {
+      if (!res.success) return;
+      
+      // 1. CẬP NHẬT TAB HÀNG ĐỢI
+      var queueContainer = document.getElementById('queueListContainer');
+      document.getElementById('queueCountBadge').innerText = res.queue.length;
+      
+      if (res.queue.length === 0) {
+        queueContainer.innerHTML = `<div class="text-center py-4 text-muted small bg-white border rounded-3 border-dashed">Sạch hàng đợi! Hiện tại không có hồ sơ cọc chờ thu.</div>`;
+      } else {
+        var queueHtml = "";
+        res.queue.forEach(function(item) {
+          queueHtml += `
+            <div class="card mb-2 border-0 shadow-sm rounded-3 bg-white" onclick="selectQueueItem('${item.mobile}')" style="cursor: pointer; border-left: 5px solid #0d6efd !important; transition: all 0.2s ease;">
+              <div class="card-body p-2.5 d-flex justify-content-between align-items-center">
+                <div>
+                  <strong class="text-dark d-block text-uppercase small">${item.partner_name}</strong>
+                  <span class="text-secondary" style="font-size: 0.72rem;">SĐT: ${item.mobile} • Dịch vụ: ${item.service}</span>
+                </div>
+                <div class="text-end ps-2">
+                  <span class="badge bg-primary-subtle text-primary fw-bold fs-6">${parseInt(item.prepaid, 10).toLocaleString('vi-VN')}đ</span>
+                </div>
+              </div>
+            </div>
+          `;
+        });
+        queueContainer.innerHTML = queueHtml;
+      }
+
+      // 2. CẬP NHẬT TAB NHẬT KÝ CA & ĐỐI SOÁT DÒNG TIỀN
+      var historyContainer = document.getElementById('historyListContainer');
+      var qrTotal = 0, cashTotal = 0, posTotal = 0;
+      
+      if (res.history.length === 0) {
+        historyContainer.innerHTML = `<div class="text-center py-4 text-muted small bg-white border rounded-3 border-dashed">Bạn chưa phát sinh giao dịch thu tiền nào trong đợt sự kiện này.</div>`;
+      } else {
+        var historyHtml = "";
+        res.history.forEach(function(item) {
+          var val = parseFloat(item.prepaid) || 0;
+          if (item.payment_method === "CK QR") qrTotal += val;
+          else if (item.payment_method === "Tiền mặt") cashTotal += val;
+          else if (item.payment_method === "POS") posTotal += val;
+
+          var methodClass = item.payment_method === "CK QR" ? "bg-success" : (item.payment_method === "Tiền mặt" ? "bg-warning text-dark" : "bg-primary");
+
+          historyHtml += `
+            <div class="card mb-2 border-0 shadow-sm rounded-3 bg-white" style="border-left: 5px solid #10b981 !important;">
+              <div class="card-body p-2.5 d-flex justify-content-between align-items-center">
+                <div>
+                  <strong class="text-dark d-block text-uppercase small" style="font-size: 0.78rem;">${item.partner_name}</strong>
+                  <span class="text-secondary small" style="font-size: 0.72rem;">SĐT: ${item.mobile} • </span>
+                  <span class="badge ${methodClass} p-1" style="font-size: 0.65rem;">${item.payment_method}</span>
+                </div>
+                <div class="text-end ps-2">
+                  <span class="fw-bold text-success fs-6">+${parseInt(item.prepaid, 10).toLocaleString('vi-VN')}đ</span>
+                  <div class="text-muted" style="font-size: 0.65rem; margin-top: 1px;">🕒 ${item.timestamp}</div>
+                </div>
+              </div>
+            </div>
+          `;
+        });
+        historyContainer.innerHTML = historyHtml;
+      }
+
+      // Cập nhật các bảng đối soát dòng tiền
+      document.getElementById('reconQr').innerText = qrTotal.toLocaleString('vi-VN') + "đ";
+      document.getElementById('reconCash').innerText = cashTotal.toLocaleString('vi-VN') + "đ";
+      document.getElementById('reconPos').innerText = posTotal.toLocaleString('vi-VN') + "đ";
+      document.getElementById('reconGrandTotal').innerText = (qrTotal + cashTotal + posTotal).toLocaleString('vi-VN') + "đ";
+    }
+
+    // Hàm kích hoạt khi Thu ngân nhấn vào một hàng chờ: Tự gõ SĐT và kích hoạt kiểm tra
+    function selectQueueItem(mobile) {
+      if (!mobile) return;
+      document.getElementById('search_mobile').value = mobile;
+      checkMobile();
+    }
+
+    // Hàm ẩn và xóa sạch định dạng của Banner đặt cọc
+    function clearPaymentStatusBanner() {
+      var statusBanner = document.getElementById('paymentStatusBanner');
+      if (statusBanner) {
+        statusBanner.style.display = "none";
+        statusBanner.className = ""; // Xóa sạch các class nền mờ để không bị hiện vệt màu trống
+        statusBanner.innerHTML = "";
+      }
+    }
+
+    // Hàm kích hoạt đồng bộ bù lỗi thủ công sang n8n/Odoo
+    function triggerManualResync() {
+      var btn = document.getElementById('btnResync');
+      var token = sessionStorage.getItem('token') || "";
+      if (!token) {
+        showNotification("⚠️ Lỗi bảo mật: Không tìm thấy phiên làm việc hợp lệ. Vui lòng đăng nhập lại!", false);
+        return;
+      }
+      
+      // Chuyển nút sang trạng thái loading
+      btn.disabled = true;
+      btn.innerHTML = `<span class="spinner-border spinner-border-sm me-1" role="status" style="width: 12px; height: 12px;"></span> <span style="font-size: 0.8rem;">Đang đồng bộ...</span>`;
+      
+      callServerAPI("syncPendingRows", { token: token }, function(res) {
+        // Trả nút về trạng thái bình thường
+        btn.disabled = false;
+        btn.innerHTML = `
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" class="bi bi-cloud-arrow-up me-1" viewBox="0 0 16 16">
+            <path fill-rule="evenodd" d="M7.646 5.146a.5.5 0 0 1 .708 0l2 2a.5.5 0 0 1-.708.708L8.5 6.707V10.5a.5.5 0 0 1-1 0V6.707L6.354 7.854a.5.5 0 1 1-.708-.708z"/>
+            <path d="M4.406 3.342A5.53 5.53 0 0 1 8 2c2.69 0 4.923 2 5.166 4.579C14.758 6.804 16 8.137 16 9.773 16 11.569 14.502 13 12.687 13H3.781C1.708 13 0 11.366 0 9.318c0-1.763 1.266-3.223 2.942-3.593.143-1.492.905-2.822 2.05-3.682m.257.859a4.526 4.526 0 0 0-1.611 2.724l-.15.713-.718.128C1.516 6.896 1 8.01 1 9.318 1 10.8 2.224 12 3.781 12h8.906C14.07 12 15 10.97 15 9.773c0-1.205-.996-2.18-2.225-2.18h-.543l-.117-.535C11.895 5.517 10.156 4 8 4a4.013 4.013 0 0 0-3.337 1.956l-.372.585-.43-.194c-.218-.1-.45-.156-.684-.162"/>
+          </svg>
+          <span style="font-size: 0.8rem;">Đồng bộ bù</span>
+        `;
+        
+        if (res.success) {
+          if (res.count > 0) {
+            showNotification("🚀 Thành công! Đã đồng bộ bù thành công " + res.count + " hồ sơ bị lỗi sang Odoo.");
+            // Nạp lại dữ liệu ca trực nếu người bấm là Thu ngân để cập nhật bảng đối soát ngay tại chỗ
+            if (sessionStorage.getItem('role') === 'thu tiền' && typeof loadCashierDashboardData === "function") {
+              loadCashierDashboardData();
+            }
+          } else {
+            showNotification("✅ Hoàn hảo! Toàn bộ hồ sơ trên hệ thống hiện đã ở trạng thái đồng bộ thành công.");
+          }
+        } else {
+          showNotification("❌ Đồng bộ bù thất bại: " + res.msg, false);
+        }
+      }, function() {
+        btn.disabled = false;
+        btn.innerHTML = `
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" class="bi bi-cloud-arrow-up me-1" viewBox="0 0 16 16">
+            <path fill-rule="evenodd" d="M7.646 5.146a.5.5 0 0 1 .708 0l2 2a.5.5 0 0 1-.708.708L8.5 6.707V10.5a.5.5 0 0 1-1 0V6.707L6.354 7.854a.5.5 0 1 1-.708-.708z"/>
+            <path d="M4.406 3.342A5.53 5.53 0 0 1 8 2c2.69 0 4.923 2 5.166 4.579C14.758 6.804 16 8.137 16 9.773 16 11.569 14.502 13 12.687 13H3.781C1.708 13 0 11.366 0 9.318c0-1.763 1.266-3.223 2.942-3.593.143-1.492.905-2.822 2.05-3.682m.257.859a4.526 4.526 0 0 0-1.611 2.724l-.15.713-.718.128C1.516 6.896 1 8.01 1 9.318 1 10.8 2.224 12 3.781 12h8.906C14.07 12 15 10.97 15 9.773c0-1.205-.996-2.18-2.225-2.18h-.543l-.117-.535C11.895 5.517 10.156 4 8 4a4.013 4.013 0 0 0-3.337 1.956l-.372.585-.43-.194c-.218-.1-.45-.156-.684-.162"/>
+          </svg>
+          <span style="font-size: 0.8rem;">Đồng bộ bù</span>
+        `;
+      });
+    }
+  </script>
+  <style>
+  .animate-pulse { animation: pulse-animation 1.5s infinite; }
+  @keyframes pulse-animation {
+    0% { transform: scale(0.95); opacity: 0.5; }
+    50% { transform: scale(1.1); opacity: 1; }
+    100% { transform: scale(0.95); opacity: 0.5; }
+  }
+</style>
+
+<script>
+  // ==============================================================================
+  // CẤU HÌNH LIÊN KẾT GOTIFY SERVER CỦA BẠN
+  // ==============================================================================
+  const GOTIFY_DOMAIN = "n8n.thammythucuc.vn"; // Thay bằng tên miền Gotify của bạn
+  const GOTIFY_CLIENT_TOKEN = "CHyHI-7OAEUlBiQ";       // Thay bằng CLIENT TOKEN (Không phải App Token) của Gotify
+
+  // Xây dựng đường dẫn WebSocket Stream chuẩn của Gotify
+  const GOTIFY_WS_URL = "wss://" + GOTIFY_DOMAIN + "/gotify/stream?token=" + GOTIFY_CLIENT_TOKEN;
+  
+  var socket = null;
+  var currentCashierUser = "";
+  var reconnectInterval = null;
+
+  // Khởi chạy kết nối khi người dùng kích hoạt
+  function initQrWebSocket(username) {
+    currentCashierUser = username;
+    document.getElementById('qrDisplayUser').innerText = username;
+    connectToWebSocket();
+  }
+
+  function connectToWebSocket() {
+    if (socket && (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING)) return;
+
+    var statusDot = document.getElementById('wsStatusDot');
+    var statusText = document.getElementById('wsStatusText');
+    var reconnectBtn = document.getElementById('wsReconnectBtn');
+
+    statusDot.className = "bg-warning animate-pulse";
+    statusText.innerText = "Đang kết nối hệ thống...";
+    if (reconnectBtn) reconnectBtn.style.display = "none";
+
+    socket = new WebSocket(GOTIFY_WS_URL);
+
+    socket.onopen = function() {
+      statusDot.className = "bg-success";
+      statusText.innerText = "Trực tuyến (Sẵn sàng)";
+      statusText.className = "fw-bold text-success small";
+      if (reconnectBtn) reconnectBtn.style.display = "none";
+      if (reconnectInterval) { clearInterval(reconnectInterval); reconnectInterval = null; }
+    };
+
+    socket.onmessage = function(event) {
+      try {
+        // Gotify đóng gói tin nhắn vào một Object JSON lớn chứa thuộc tính .message
+        var gotifyEnvelope = JSON.parse(event.data);
+        console.log(gotifyEnvelope);
+        if (gotifyEnvelope && gotifyEnvelope.message) {
+          var msgContent = gotifyEnvelope.message.trim();
+          
+          // PHƯƠNG ÁN A: Phân tích nếu tin nhắn Gotify gửi sang là chuỗi JSON mã hóa
+          try {
+            var innerData = gotifyEnvelope.extras;
+            if (innerData.username && innerData.username.toLowerCase().trim() === currentCashierUser.toLowerCase().trim()) {
+              
+              // Xử lý lệnh đóng QR khi đã thanh toán xong
+              if (innerData.action === "payment_confirmed" || innerData.action === "close" || innerData.status === "paid") {
+                resetQrToIdle();
+                return;
+              }
+
+              // Xử lý hiển thị QR mới gửi sang
+              var base64Img = innerData.qrDataURL;
+              if (base64Img) {
+                if (!base64Img.startsWith('data:image')) { base64Img = 'data:image/png;base64,' + base64Img; }
+                document.getElementById('qrWsImage').src = base64Img;
+                document.getElementById('qrPartnerName').innerText = innerData.partner_name || "Khách hàng";
+                var amountVal = parseFloat(innerData.amount) || 0;
+                document.getElementById('qrAmount').innerText = amountVal.toLocaleString('vi-VN') + ' VNĐ';
+
+                document.getElementById('qrIdleState').style.display = "none";
+                document.getElementById('qrActiveState').style.display = "block";
+                showNotification("🔔 Nhận mã QR thanh toán mới thành công!");
+              }
+            }
+          } catch (e) {
+            // PHƯƠNG ÁN B: Phân tích nếu tin nhắn Gotify gửi sang chỉ là văn bản dạng thường
+            // Ví dụ bạn bắn text thường: "payment_confirmed:HNBV0294" hoặc "HNBV0294 paid"
+            var msgLower = msgContent.toLowerCase();
+            var userLower = currentCashierUser.toLowerCase().trim();
+            
+            if (msgLower.includes("payment_confirmed") || msgLower.includes("paid") || msgLower.includes("close")) {
+              if (msgLower.includes(userLower)) {
+                resetQrToIdle();
+                return;
+              }
+            }
+          }
+        }
+      } catch (err) {
+        console.error("Lỗi phân tích WebSocket: " + err.message);
+      }
+    };
+
+    socket.onclose = function() {
+      statusDot.className = "bg-danger animate-pulse";
+      statusText.innerText = "Ngoại tuyến (Đang kết nối lại...)";
+      statusText.className = "fw-bold text-danger small";
+      if (reconnectBtn) reconnectBtn.style.display = "inline-flex";
+      
+      if (!reconnectInterval) {
+        reconnectInterval = setInterval(connectToWebSocket, 5000);
+      }
+    };
+
+    socket.onerror = function() {
+      socket.close();
+    };
+  }
+
+  // Quay trở lại trạng thái chờ nhận thanh toán
+  function resetQrToIdle() {
+    document.getElementById('qrWsImage').src = "";
+    document.getElementById('qrPartnerName').innerText = "--";
+    document.getElementById('qrAmount').innerText = "0đ";
+    
+    document.getElementById('qrActiveState').style.display = "none";
+    document.getElementById('qrIdleState').style.display = "block";
+  }
+
+  // ================= LUỒNG TỰ ĐỘNG ĐÁNH THỨC KẾT NỐI (WAKE UP LISTENERS) =================
+  document.addEventListener('visibilitychange', function() {
+    if (document.visibilityState === 'visible') handlePageWakeUp();
+  });
+  window.addEventListener('focus', function() {
+    handlePageWakeUp();
+  });
+  window.addEventListener('pageshow', function(event) {
+    handlePageWakeUp();
+  });
+
+  function handlePageWakeUp() {
+    var container = document.getElementById('qrMobileContainer');
+    if (container && container.style.display !== "none") {
+      if (!socket || socket.readyState === WebSocket.CLOSED || socket.readyState === WebSocket.CLOSING) {
+        console.log("Wake-up: Khôi phục kết nối WebSocket ngay lập tức...");
+        connectToWebSocket();
+      }
+    }
+  }
+</script>
+<script>
+  // Biến toàn cục lưu danh sách dữ liệu gốc để phục vụ tìm kiếm nhanh không trễ mạng
+  var allPendingCustomers = [];
+  var silentRefreshInterval = null; // Quản lý thời gian chạy ngầm
+  var wakeLock = null;              // BIẾN QUẢN LÝ KHÓA SÁNG MÀN HÌNH
+
+  // Hàm tải dữ liệu thủ công
+  function loadCoordinatorData() {
+    document.getElementById('coordinatorLoading').style.display = "block";
+    document.getElementById('coordinatorPendingList').innerHTML = "";
+    document.getElementById('coordinatorEmptyState').style.display = "none";
+    document.getElementById('searchMobileInput').value = ""; 
+    document.getElementById('btnClearSearch').style.display = "none";
+
+    var secureToken = sessionStorage.getItem('token') || "";
+    callServerAPI(
+      "getCoordinatorData", 
+      { token: secureToken }, 
+      function(res) {
+        document.getElementById('coordinatorLoading').style.display = "none";
+        updateCoordinatorUI(res);
+        startAutoRefresh();
+        
+        // KÍCH HOẠT GIỮ MÀN HÌNH LUÔN SÁNG KHI VÀO GIAO DIỆN ĐIỀU PHỐI
+        requestWakeLock();
+      }, 
+      function(err) {
+        document.getElementById('coordinatorLoading').style.display = "none";
+      }
+    );
+  }
+
+  // Khởi động chu kỳ đồng bộ dữ liệu ngầm (1 phút / lần)
+  function startAutoRefresh() {
+    stopAutoRefresh(); // Dọn dẹp bộ hẹn giờ cũ nếu có để tránh chạy trùng lặp
+    
+    silentRefreshInterval = setInterval(function() {
+      // Chỉ tự động tải lại nếu màn hình phân tuyến đang hiển thị và không ở trạng thái tải thủ công
+      var container = document.getElementById('coordinatorMobileContainer');
+      var manualLoader = document.getElementById('coordinatorLoading');
+      if (container && container.style.display !== "none" && manualLoader && manualLoader.style.display === "none") {
+        silentLoadCoordinatorData();
+      }
+    }, 60000); // 60,000ms = 1 phút
+  }
+
+  // Hàm dọn dẹp bộ hẹn giờ tự động (Sử dụng khi đăng xuất)
+  function stopAutoRefresh() {
+    if (silentRefreshInterval) {
+      clearInterval(silentRefreshInterval);
+      silentRefreshInterval = null;
+    }
+    // ĐỒNG THỜI: Giải phóng gỡ bỏ chế độ giữ màn hình sáng khi đăng xuất
+    releaseWakeLock();
+  }
+
+  // Hàm tải ngầm
+  function silentLoadCoordinatorData() {
+    var secureToken = sessionStorage.getItem('token') || "";
+
+    callServerAPI(
+      "getCoordinatorData", 
+      { token: secureToken }, 
+      function(res) {
+        if (res.success) {
+          updateCoordinatorUI(res);
+        }
+      },
+      function(err) {
+        console.warn("Đồng bộ ngầm điều phối tạm thời gián đoạn: ", err.message);
+      }
+    );
+  }
+
+  // Hàm cập nhật toàn bộ dữ liệu thống kê, tỷ lệ % và danh sách chờ lên màn hình di động
+  function updateCoordinatorUI(res) {
+    if (res.success) {
+      var thucuc = parseInt(res.stats.thucuc) || 0;
+      var caugiay = parseInt(res.stats.caugiay) || 0;
+      
+      // Lưu lại danh sách chờ gốc từ server gửi về
+      allPendingCustomers = res.pendingList || [];
+      var pendingCount = allPendingCustomers.length;
+      
+      // Tổng số lượng khách hàng xác nhận đồng ý thực hiện ngay
+      var totalReadyNow = thucuc + caugiay + pendingCount;
+
+      // Tính tỷ lệ % của từng cơ sở so với tổng thể (Làm tròn 1 chữ số thập phân)
+      var pctTC = totalReadyNow > 0 ? ((thucuc / totalReadyNow) * 100).toFixed(1) : "0.0";
+      var pctCG = totalReadyNow > 0 ? ((caugiay / totalReadyNow) * 100).toFixed(1) : "0.0";
+
+      // 1. Cập nhật số lượng và tỷ lệ % vào các thẻ thống kê
+      document.getElementById('statThuCuc').innerText = thucuc;
+      document.getElementById('pctThuCuc').innerText = pctTC + "%";
+
+      document.getElementById('statCauGiay').innerText = caugiay;
+      document.getElementById('pctCauGiay').innerText = pctCG + "%";
+
+      document.getElementById('pendingCountBadge').innerText = pendingCount;
+
+      // 2. Thực hiện vẽ danh sách (Đồng thời áp dụng bộ lọc SĐT nếu nhân viên đang gõ)
+      filterPendingList();
+    } else {
+      showNotification("❌ Lỗi tải dữ liệu ngầm: " + res.msg, false);
+    }
+  }
+
+  // Hàm lọc danh sách khách hàng cục bộ thời gian thực theo SĐT
+  function filterPendingList() {
+    var rawInput = document.getElementById('searchMobileInput').value;
+    var searchVal = rawInput.trim().replace(/\D/g, ''); 
+    var btnClear = document.getElementById('btnClearSearch');
+    
+    if (rawInput) {
+      btnClear.style.display = "block";
+    } else {
+      btnClear.style.display = "none";
+    }
+
+    var filteredList = allPendingCustomers.filter(function(item) {
+      var itemPhoneClean = item.mobile.toString().replace(/\D/g, '');
+      return itemPhoneClean.includes(searchVal);
+    });
+
+    renderPendingList(filteredList);
+
+    var emptyState = document.getElementById('coordinatorEmptyState');
+    var emptyTitle = document.getElementById('emptyStateTitle');
+    var emptyText = document.getElementById('emptyStateText');
+
+    if (filteredList.length === 0) {
+      emptyState.style.display = "block";
+      if (rawInput.trim()) {
+        emptyTitle.innerText = "Không tìm thấy";
+        emptyText.innerText = "Không tìm thấy hồ sơ nào khớp với từ khóa tìm kiếm: " + rawInput;
+      } else {
+        emptyTitle.innerText = "Đã Hoàn Thành";
+        emptyText.innerText = "Hiện tại không còn khách hàng nào đồng ý làm dịch vụ ngay đang chờ điều phối.";
+      }
+    } else {
+      emptyState.style.display = "none";
+    }
+  }
+
+  // Nút xóa nhanh nội dung tìm kiếm
+  function clearSearchInput() {
+    document.getElementById('searchMobileInput').value = "";
+    filterPendingList();
+    document.getElementById('searchMobileInput').focus();
+  }
+
+  // Vẽ danh sách khách hàng dạng Card mượt mà trên di động
+  function renderPendingList(list) {
+    var container = document.getElementById('coordinatorPendingList');
+    container.innerHTML = "";
+
+    list.forEach(function(item) {
+      var card = document.createElement('div');
+      card.className = "card border-0 shadow-sm mb-3 rounded-4 bg-white";
+      card.style.borderLeft = item.payment_done ? "5px solid #10b981" : "5px solid #ff9f43";
+
+      var depositBadge = item.payment_done 
+        ? `<span class="badge bg-success-subtle text-success border border-success-subtle ms-1.5" style="font-size: 0.68rem; padding: 4px 6px;">💰 Đã đặt cọc</span>`
+        : `<span class="badge bg-warning-subtle text-warning border border-warning-subtle ms-1.5" style="font-size: 0.68rem; padding: 4px 6px;">⏳ Chưa cọc</span>`;
+
+      card.innerHTML = `
+        <div class="card-body p-3">
+          <div class="d-flex justify-content-between align-items-start mb-2">
+            <div class="d-flex align-items-center flex-wrap gap-1">
+              <h6 class="fw-bold text-dark m-0 fs-6 text-uppercase">${item.partner_name}</h6>
+              ${depositBadge}
+            </div>
+            <span class="badge bg-light text-secondary border small" style="font-size: 0.7rem;">Cơ sở: ${item.branch || "Thu Cúc"}</span>
+          </div>
+          <div class="text-secondary small mb-1">
+            <strong>Số điện thoại:</strong> 
+            <a href="tel:${item.mobile}" class="text-decoration-none fw-medium">${item.mobile}</a>
+          </div>
+          <div class="text-secondary small mb-3">
+            <strong>Dịch vụ tư vấn:</strong> <span class="text-dark fw-medium">${item.service}</span>
+          </div>
+          
+          <!-- NÚT THAO TÁC PHÂN TUYẾN -->
+          <div class="row g-2">
+            <div class="col-6">
+              <button type="button" class="btn btn-success w-100 py-2.5 fw-bold text-white small" onclick="dispatchCustomer(${item.rowId}, 'BVTM Thu Cúc')">
+                1BYK
+              </button>
+            </div>
+            <div class="col-6">
+              <button type="button" class="btn btn-primary w-100 py-2.5 fw-bold text-white small" onclick="dispatchCustomer(${item.rowId}, '70 Cầu Giấy')">
+                70CG
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+      container.appendChild(card);
+    });
+  }
+
+  // Gọi hàm cập nhật phân tuyến cơ sở điều phối
+  function dispatchCustomer(rowId, destBranch) {
+    stopAutoRefresh();
+    
+    document.getElementById('coordinatorLoading').style.display = "block";
+    document.getElementById('coordinatorPendingList').style.opacity = "0.4";
+
+    var secureToken = sessionStorage.getItem('token') || "";
+
+    callServerAPI(
+      "updateDispatchBranch", 
+      { rowId: rowId, branchValue: destBranch, token: secureToken }, 
+      function(res) {
+        document.getElementById('coordinatorPendingList').style.opacity = "1";
+        document.getElementById('coordinatorLoading').style.display = "none";
+        
+        if (res.success) {
+          showNotification("🚀 Đã phân tuyến khách hàng sang cơ sở: " + destBranch);
+          updateCoordinatorUI(res);
+        } else {
+          showNotification("❌ Điều phối thất bại: " + res.msg, false);
+        }
+        startAutoRefresh();
+      }, 
+      function(err) {
+        document.getElementById('coordinatorPendingList').style.opacity = "1";
+        document.getElementById('coordinatorLoading').style.display = "none";
+        startAutoRefresh();
+      }
+    );
+  }
+
+  // ================= LUỒNG GIỮ MÀN HÌNH DI ĐỘNG LUÔN SÁNG (WAKE LOCK API) =================
+
+  // Hàm yêu cầu khóa sáng màn hình từ hệ điều hành di động
+  async function requestWakeLock() {
+    if ('wakeLock' in navigator) {
+      try {
+        wakeLock = await navigator.wakeLock.request('screen');
+        console.log("💡 Đã kích hoạt giữ màn hình điện thoại luôn sáng.");
+      } catch (err) {
+        console.warn("⚠️ Không thể kích hoạt khóa sáng màn hình: " + err.message);
+      }
+    }
+  }
+
+  // Hàm giải phóng gỡ bỏ khóa sáng
+  function releaseWakeLock() {
+    if (wakeLock !== null) {
+      wakeLock.release().then(function() {
+        wakeLock = null;
+        console.log("💡 Đã gỡ bỏ chế độ giữ màn hình sáng.");
+      });
+    }
+  }
+
+  // Tự động kích hoạt lại khóa sáng khi nhân viên quay lại tab từ ứng dụng khác
+  document.addEventListener('visibilitychange', function() {
+    var container = document.getElementById('coordinatorMobileContainer');
+    if (document.visibilityState === 'visible' && container && container.style.display !== "none") {
+      requestWakeLock();
+    }
+  });
+</script>
 </body>
 </html>
